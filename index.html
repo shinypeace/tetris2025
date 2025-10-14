@@ -1,1001 +1,1214 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Tower Blocks</title>
-    <!-- Yandex Games SDK -->
-    <script src="https://yandex.ru/games/sdk/v2"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r83/three.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/1.20.3/TweenMax.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&family=Oswald:wght@700&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Тетрис</title>
+    <!-- VK Bridge -->
+    <script src="https://unpkg.com/@vkontakte/vk-bridge/dist/browser.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
+        /* ========================================
+        Новый Дизайн "Тетрис"
+        ======================================== */
         :root {
-            --bg-top: #1a237e;
-            --bg-bottom: #0d47a1;
-            --text-color: #0d47a1;
-            --text-color-light: #5472d3;
-            --accent-color: #ffc107;
+            --bg-gradient-start: #0f0c29;
+            --bg-gradient-mid: #302b63;
+            --bg-gradient-end: #24243e;
+            --glass-bg: rgba(22, 27, 34, 0.65);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --text-primary: #e6edf3;
+            --text-secondary: #7d8590;
+            --text-accent: #58a6ff;
+            --shadow-color: rgba(0, 0, 0, 0.5);
+            --btn-bg-start: #58a6ff;
+            --btn-bg-end: #3b82f6;
+            --btn-hover-start: #68b6ff;
+            --btn-hover-end: #4b92f6;
+            --btn-text: #ffffff;
+            --control-bg: rgba(255, 255, 255, 0.1);
+            --control-active-bg: rgba(255, 255, 255, 0.2);
+            --grid-color: rgba(255, 255, 255, 0.05);
+            --ghost-color: rgba(255, 255, 255, 0.15);
         }
 
-        html, body {
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
             margin: 0;
+            background: linear-gradient(45deg, var(--bg-gradient-start), var(--bg-gradient-mid), var(--bg-gradient-end));
+            background-size: 200% 200%;
+            animation: gradient-animation 15s ease infinite;
+            color: var(--text-primary);
             overflow: hidden;
-            height: 100%;
-            width: 100%;
-            position: relative;
-            font-family: 'Montserrat', sans-serif;
-            color: var(--text-color);
-            background: linear-gradient(180deg, var(--bg-top) 0%, var(--bg-bottom) 100%);
+            user-select: none;
+            -webkit-user-select: none;
         }
-        #container {
-            width: 100%;
-            height: 100%;
-            position: relative;
+
+        @keyframes gradient-animation {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
         }
-        #game {
-            position: absolute;
-            top: 0;
-            right: 0;
-            bottom: 0;
-            left: 0;
-        }
-        .ui-layer {
-            position: absolute;
-            top: 0;
-            left: 0;
+
+        /* ========================================
+        Структура Игры
+        ======================================== */
+        #game-wrapper {
+            display: flex;
+            justify-content: center;
+            align-items: center;
             width: 100%;
             height: 100%;
+            padding: 20px;
+        }
+
+        #game-container {
+            display: flex;
+            flex-direction: row-reverse;
+            gap: 20px;
+            padding: 25px;
+            border-radius: 20px;
+            transition: transform 0.5s ease;
+            transform-origin: center center;
+        }
+        
+        #main-content {
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            pointer-events: none;
+            gap: 20px;
+        }
+
+        #canvas {
+            width: 200px;
+            height: 440px;
+            background-color: rgba(0,0,0,0.2);
+            position: relative;
+            border-radius: 10px;
+            border: 1px solid var(--glass-border);
+            transition: background-color 0.3s, border-color 0.3s;
+            background-image: 
+                linear-gradient(to right, var(--grid-color) 1px, transparent 1px),
+                linear-gradient(to bottom, var(--grid-color) 1px, transparent 1px);
+            background-size: 20px 20px;
+            overflow: hidden;
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.5);
+        }
+
+        #canvas h1 {
+            margin: 0;
+            text-align: center;
+            font-size: 16px;
+            line-height: 1.5;
+            padding: 20px;
+            padding-top: 150px;
+            color: var(--text-accent);
+            font-weight: 600;
+        }
+
+        /* ========================================
+        Информационная Панель
+        ======================================== */
+        #info-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            width: 160px;
             text-align: center;
         }
-        .ui-layer > * {
-            pointer-events: all;
+
+        .info-box {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            border-radius: 12px;
+            padding: 12px 8px;
+            transition: background-color 0.2s;
         }
-        
-        /* --- Menu --- */
-        #main-menu .title {
-            font-family: 'Oswald', sans-serif;
-            line-height: 1;
-            margin-bottom: 0.75em;
-            color: #ffffff;
-            text-shadow: 2px 2px 8px rgba(0,0,0,0.3);
+        .info-box p {
+            margin: 0;
+            font-size: 12px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            font-weight: 600;
         }
-        #main-menu .title-line-1 {
-            font-size: 4.5rem;
-            font-weight: 700;
+        .info-box span {
             display: block;
-        }
-        #main-menu .title-line-2 {
-            font-size: 2.25rem;
+            font-size: 22px;
+            color: var(--text-primary);
+            margin-top: 5px;
             font-weight: 700;
-            display: block;
-            margin-top: -0.3em;
-        }
-        #main-menu .button-group {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 1em;
-        }
-        
-        .main-content {
-             /* This block will be centered by the parent .ui-layer */
         }
 
-        #main-menu p {
-            font-size: 1.1rem;
-            color: #bbdefb;
-            font-weight: bold;
-            margin-top: 1em;
+        #next_shape {
+            position: relative;
+            width: 100%;
+            height: 80px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
-        .button {
-            background-color: #ffffff;
-            color: var(--text-color);
+        
+        /* ========================================
+        Фигуры и Эффекты
+        ======================================== */
+        .square {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            box-sizing: border-box;
+            border-radius: 4px;
+            transition: opacity 0.2s, transform 0.2s, top 0.08s linear, left 0.08s linear;
+            box-shadow: inset 0 0 5px rgba(0,0,0,0.4);
+        }
+        .square.ghost {
+            background-color: transparent !important;
+            box-shadow: none;
+            border: 2px solid var(--ghost-color);
+        }
+        .square.line-clear {
+            animation: flash 0.3s ease-out;
+        }
+        .square.bomb-clear {
+            animation: bomb-flash 0.4s ease-out;
+        }
+        @keyframes flash {
+            0%, 100% { opacity: 1; transform: scale(1); filter: brightness(1.5); }
+            50% { opacity: 0; transform: scale(0.5); filter: brightness(1); }
+        }
+        @keyframes bomb-flash {
+            0% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(0); opacity: 0; }
+        }
+
+        .type0 { background: linear-gradient(135deg, #c0392b, #e74c3c); } /* Z - Red */
+        .type1 { background: linear-gradient(135deg, #27ae60, #2ecc71); } /* S - Green */
+        .type2 { background: linear-gradient(135deg, #d35400, #f39c12); } /* L - Orange */
+        .type3 { background: linear-gradient(135deg, #2980b9, #3498db); } /* J - Blue */
+        .type4 { background: linear-gradient(135deg, #8e44ad, #9b59b6); } /* T - Purple */
+        .type5 { background: linear-gradient(135deg, #2c3e50, #34495e); } /* O - Gray */
+        .type6 { background: linear-gradient(135deg, #00b8d4, #00e5ff); } /* I - Cyan */
+        .type7 { background: radial-gradient(circle, #f1c40f, #f39c12); box-shadow: 0 0 10px #f1c40f; } /* BOMB - Yellow */
+
+
+        /* ========================================
+        Модальные Окна (Меню)
+        ======================================== */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(10, 25, 47, 0.7);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+        }
+        .modal-overlay.visible { opacity: 1; visibility: visible; }
+
+        .modal-content {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            align-items: center;
+            text-align: center;
+            padding: 40px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 8px 32px 0 var(--shadow-color);
+            border-radius: 20px;
+            max-width: 90vw;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .modal-content h1 {
+            font-size: 3em;
+            margin: 0 0 20px 0;
+            font-weight: 700;
+            letter-spacing: 2px;
+        }
+        .modal-content h1 span {
+            text-shadow: 0 0 10px currentColor;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, var(--btn-bg-start), var(--btn-bg-end));
+            color: var(--btn-text);
             border: none;
             border-radius: 12px;
-            padding: 15px 30px;
-            font-size: 1.2rem;
-            font-family: 'Montserrat', sans-serif;
-            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            padding: 14px 28px;
             cursor: pointer;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-            width: 220px;
-            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.2s ease-in-out;
+            width: 250px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border: 1px solid var(--glass-border);
         }
-        .button:hover {
+        .btn:hover {
+            background: linear-gradient(45deg, var(--btn-hover-start), var(--btn-hover-end));
             transform: translateY(-3px);
-            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+            box-shadow: 0 7px 20px rgba(88, 166, 255, 0.4);
+        }
+        .btn:active {
+            transform: translateY(0px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
         }
 
-        /* --- In-Game UI --- */
-        #in-game-ui {
-            justify-content: flex-start;
-        }
-        #score {
-            position: absolute;
-            top: 20px;
+        .rules-content, .stats-content {
+            font-size: 13px;
+            text-align: left;
+            line-height: 1.8;
             width: 100%;
+            max-width: 350px;
+            color: var(--text-secondary);
+        }
+        .rules-content h3 {
+            color: var(--text-accent);
+            font-size: 15px;
+            margin: 15px 0 5px 0;
+            font-weight: 600;
+        }
+
+        .stat-category {
+            margin-bottom: 20px;
+        }
+        .stat-category h3 {
+            color: var(--text-accent);
+            font-size: 16px;
+            margin: 0 0 10px 0;
             text-align: center;
-            font-size: 10vh;
-            font-family: 'Oswald', sans-serif;
-            color: #ffffff;
-            text-shadow: 2px 2px 8px rgba(0,0,0,0.3);
-            transition: transform 0.5s ease, opacity 0.5s ease;
-            transform: translateY(-200px) scale(1);
-            opacity: 0;
+            font-weight: 600;
         }
-        #perfect-placement-text {
-            position: absolute;
-            top: 25vh;
-            font-size: 2rem;
-            font-family: 'Oswald', sans-serif;
-            color: var(--accent-color);
-            text-shadow: 1px 1px 3px rgba(0,0,0,0.2);
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s ease, transform 0.5s ease;
-        }
-        #pause-button {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            width: 50px;
-            height: 50px;
-            background-color: rgba(255,255,255,0.8);
-            border-radius: 50%;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        .stat-item {
             display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            z-index: 100;
+            justify-content: space-between;
+            margin: 8px 0;
+            background: rgba(0,0,0,0.15);
+            padding: 8px 12px;
+            border-radius: 8px;
         }
-        #pause-button span {
-            display: block;
-            width: 5px;
-            height: 20px;
-            background-color: var(--text-color);
-            margin: 0 3px;
-        }
-        
-        /* --- Modal & Menus --- */
-        .modal-background, .menu-background {
-            background-color: rgba(0,0,0,0.5);
-            z-index: 1000;
-        }
-        .modal-box, .menu-box {
-            background: rgba(255,255,255,0.95);
-            padding: 30px 40px;
-            border-radius: 20px;
-            text-align: center;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            width: clamp(280px, 80vw, 400px);
-            max-height: 80vh; /* Limit height */
-            overflow-y: auto; /* Enable scroll if needed */
-        }
-        .menu-box .button, .modal-box .button {
-            display: block;
-            margin: 15px auto 0 auto;
-            width: 100%;
-        }
-        .modal-box h2, .menu-box h2 {
-            font-family: 'Oswald', sans-serif;
-            font-size: 2.5rem;
-            margin-bottom: 0.5em;
-            margin-top: 0;
-        }
-        .modal-box p {
-            text-align: left;
-            margin-bottom: 1em;
-            line-height: 1.5;
-        }
-        .modal-box ul {
-            text-align: left;
-            padding-left: 20px;
-            margin-bottom: 1.5em;
-        }
-        .menu-box .score-display {
-            margin-bottom: 1.5em;
-        }
-        .menu-box .score-display span {
-            display: block;
-            font-size: 1.1rem;
-            color: var(--text-color-light);
-        }
-        .menu-box .score-display strong {
-            display: block;
-            font-size: 2rem;
-            color: var(--text-color);
+        .stat-item span:last-child {
+            color: var(--text-primary);
+            font-weight: bold;
         }
 
-        /* --- State Handling --- */
-        .hidden {
-            display: none !important;
+        /* ========================================
+        Мобильное Управление
+        ======================================== */
+        #mobile-controls {
+            display: grid;
+            grid-template-areas:
+                ". up ."
+                "left down right";
+            gap: 10px;
+            width: 200px;
         }
-        #container.playing #score,
-        #container.ended #score {
-            transform: translateY(0px) scale(1);
-            opacity: 1;
+        .control-btn {
+            width: 60px;
+            height: 60px;
+            font-size: 28px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: var(--control-bg);
+            color: var(--text-primary);
+            border: 1px solid var(--glass-border);
+            cursor: pointer;
+            transition: all 0.2s;
         }
-        #container.ended #score {
-            transform: translateY(6vh) scale(1.5);
+        .control-btn:active {
+            background-color: var(--control-active-bg);
+            transform: scale(0.95);
         }
+        #rotate-btn { grid-area: up; }
+        #left-btn { grid-area: left; }
+        #down-btn { grid-area: down; }
+        #right-btn { grid-area: right; }
+        
+        .hidden { display: none !important; }
+
+        @media (max-width: 480px), (max-height: 700px) {
+            #game-container {
+                flex-direction: column;
+                align-items: center;
+            }
+             #info-panel {
+                flex-direction: row;
+                flex-wrap: wrap;
+                width: auto;
+                justify-content: center;
+            }
+            .info-box {
+                flex-grow: 1;
+                min-width: 100px;
+            }
+            #info-panel #pause-btn-container {
+                width: 100%;
+                order: 5;
+            }
+        }
+
     </style>
 </head>
-<body>
-    <div id="container">
-        <div id="game"></div>
+<body oncontextmenu="return false;">
 
-        <div id="main-menu" class="ui-layer">
-            <div class="main-content">
-                <div class="title">
-                    <span class="title-line-1">TOWER</span>
-                    <span class="title-line-2">BLOCKS</span>
-                </div>
-                <div class="button-group">
-                    <button id="start-button" class="button" data-lang-key="play">Играть</button>
-                    <button id="rules-button" class="button" data-lang-key="rules">Правила</button>
-                </div>
-                <p><span data-lang-key="record_prefix">Рекорд:</span> <span id="high-score">0</span></p>
-            </div>
+    <div id="main-menu" class="modal-overlay visible">
+        <div class="modal-content">
+            <h1>
+                <span style="color: #e74c3c;">Т</span><span style="color: #f39c12;">е</span><span style="color: #2ecc71;">т</span><span style="color: #3498db;">р</span><span style="color: #9b59b6;">и</span><span style="color: #00e5ff;">с</span>
+            </h1>
+            <button class="btn" data-mode="classic">Классика</button>
+            <button class="btn" data-mode="avalanche">Лавина</button>
+            <button class="btn" data-mode="demolition">Подрывник</button>
+            <button id="rules-btn" class="btn" style="margin-top: 10px;">Правила</button>
+            <button id="stats-btn" class="btn">Статистика</button>
         </div>
-        
-        <div id="rules-modal" class="ui-layer modal-background hidden">
-            <div class="modal-box">
-                <h2 data-lang-key="rules_title">Правила Игры</h2>
-                <p data-lang-key="rules_p1">Ваша задача — построить как можно более высокую башню, устанавливая блоки друг на друга.</p>
-                <ul>
-                    <li data-lang-key="rules_li1">Нажимайте на экран (или пробел), чтобы остановить движущийся блок.</li>
-                    <li data-lang-key="rules_li2">Часть блока, вышедшая за пределы нижнего, отколется.</li>
-                    <li data-lang-key="rules_li3">Башня станет уже, и строить будет сложнее!</li>
-                </ul>
-                <p><strong data-lang-key="rules_combo_title">⭐ Идеальное Комбо:</strong></p>
-                <ul>
-                    <li data-lang-key="rules_combo_li1">Установите <strong>6 блоков идеально</strong> подряд, чтобы активировать комбо.</li>
-                    <li data-lang-key="rules_combo_li2">Каждое следующее идеальное попадание будет <strong>увеличивать размер</strong> платформы, возвращая ее к первоначальной ширине!</li>
-                </ul>
-                <button id="close-rules-button" class="button" data-lang-key="rules_close">Понятно</button>
-            </div>
-        </div>
+    </div>
 
-        <div id="in-game-ui" class="ui-layer hidden">
-            <div id="score">0</div>
-            <div id="perfect-placement-text" data-lang-key="perfect">ИДЕАЛЬНО!</div>
-            <div id="pause-button">
-                <span></span>
-                <span></span>
+    <div id="rules-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h1>Правила</h1>
+            <div class="rules-content">
+                <h3>Классика</h3>
+                <p>Собирайте линии, чтобы набрать очки. Каждые 10 линий увеличивают уровень и скорость игры.</p>
+                <h3>Лавина</h3>
+                <p>Каждые несколько секунд снизу поднимается новый ряд блоков. Успевайте их разбирать, пока поле не заполнилось!</p>
+                <h3>Подрывник</h3>
+                <p>Среди фигур иногда попадаются бомбы. Установите бомбу, чтобы взорвать блоки в радиусе 3x3. Идеально для выхода из сложных ситуаций.</p>
             </div>
+            <button id="close-rules-btn" class="btn">Понятно</button>
         </div>
+    </div>
 
-        <div id="pause-menu" class="ui-layer menu-background hidden">
-            <div class="menu-box">
-                <button id="resume-button" class="button" data-lang-key="resume">Продолжить</button>
-                <button id="restart-button" class="button" data-lang-key="restart">Заново</button>
-                <button id="menu-button" class="button" data-lang-key="main_menu">В меню</button>
-            </div>
+    <div id="game-over-menu" class="modal-overlay">
+        <div class="modal-content">
+            <h1 id="game-over-title">Конец Игры</h1>
+            <button id="restart-gameover-btn" class="btn">Заново</button>
+            <button id="main-menu-gameover-btn" class="btn">В меню</button>
         </div>
-        
-        <div id="game-over-menu" class="ui-layer menu-background hidden">
-             <div class="menu-box">
-                <h2 data-lang-key="game_over">Игра окончена</h2>
-                <div class="score-display">
-                    <span data-lang-key="your_score">Ваш счет</span>
-                    <strong id="final-score">0</strong>
+    </div>
+
+    <div id="pause-menu" class="modal-overlay">
+        <div class="modal-content">
+            <h1>Пауза</h1>
+            <button id="resume-btn" class="btn">Продолжить</button>
+            <button id="restart-btn" class="btn">Заново</button>
+            <button id="main-menu-btn" class="btn">В меню</button>
+        </div>
+    </div>
+
+    <div id="stats-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h1>Статистика</h1>
+            <div id="stats-grid" class="stats-content"></div>
+            <button id="close-stats-btn" class="btn">Закрыть</button>
+        </div>
+    </div>
+
+    <div id="game-wrapper" class="hidden">
+        <div id="game-container">
+            <div id="info-panel">
+                <div class="info-box"><p>Счет</p><span id="score-val">0</span></div>
+                <div class="info-box"><p>Уровень</p><span id="level-val">1</span></div>
+                <div class="info-box"><p>Линии</p><span id="lines-val">0</span></div>
+                <div class="info-box"><p>Время</p><span id="time-val">00:00</span></div>
+                <div class="info-box"><p>Далее</p><div id="next_shape"></div></div>
+                <div id="pause-btn-container" style="padding: 0; background: transparent; border: none;">
+                    <button id="pause-btn" class="btn" style="width: 100%; font-size: 12px; padding: 12px;">Пауза</button>
                 </div>
-                 <div class="score-display">
-                    <span data-lang-key="record">Рекорд</span>
-                    <strong id="game-over-high-score">0</strong>
+            </div>
+            <div id="main-content">
+                <div id="canvas"></div>
+                <div id="mobile-controls">
+                    <button id="rotate-btn" class="control-btn">↻</button>
+                    <button id="left-btn" class="control-btn">←</button>
+                    <button id="down-btn" class="control-btn">↓</button>
+                    <button id="right-btn" class="control-btn">→</button>
                 </div>
-                <button id="restart-game-over-button" class="button" data-lang-key="play_again">Играть снова</button>
-                <button id="menu-game-over-button" class="button" data-lang-key="main_menu_2">В меню</button>
             </div>
         </div>
     </div>
 
     <script>
-        console.clear();
-        
-        // --- Translation Data ---
-        const translations = {
-            en: {
-                play: 'Play',
-                rules: 'Rules',
-                record_prefix: 'High Score:',
-                rules_title: 'Game Rules',
-                rules_p1: 'Your goal is to build the tallest tower possible by stacking blocks on top of each other.',
-                rules_li1: 'Tap the screen (or press space) to stop the moving block.',
-                rules_li2: 'The part of the block that goes beyond the one below will be chopped off.',
-                rules_li3: 'The tower will get narrower, making it harder to build!',
-                rules_combo_title: '⭐ Perfect Combo:',
-                rules_combo_li1: 'Place <strong>6 blocks perfectly</strong> in a row to activate a combo.',
-                rules_combo_li2: 'Each subsequent perfect placement will <strong>increase the platform size</strong>, restoring it to its original width!',
-                rules_close: 'Got It',
-                perfect: 'PERFECT!',
-                resume: 'Resume',
-                restart: 'Restart',
-                main_menu: 'Main Menu',
-                game_over: 'Game Over',
-                your_score: 'Your Score',
-                record: 'High Score',
-                play_again: 'Play Again',
-                main_menu_2: 'Main Menu',
-            },
-            ru: {
-                play: 'Играть',
-                rules: 'Правила',
-                record_prefix: 'Рекорд:',
-                rules_title: 'Правила Игры',
-                rules_p1: 'Ваша задача — построить как можно более высокую башню, устанавливая блоки друг на друга.',
-                rules_li1: 'Нажимайте на экран (или пробел), чтобы остановить движущийся блок.',
-                rules_li2: 'Часть блока, вышедшая за пределы нижнего, отколется.',
-                rules_li3: 'Башня станет уже, и строить будет сложнее!',
-                rules_combo_title: '⭐ Идеальное Комбо:',
-                rules_combo_li1: 'Установите <strong>6 блоков идеально</strong> подряд, чтобы активировать комбо.',
-                rules_combo_li2: 'Каждое следующее идеальное попадание будет <strong>увеличивать размер</strong> платформы, возвращая ее к первоначальной ширине!',
-                rules_close: 'Понятно',
-                perfect: 'ИДЕАЛЬНО!',
-                resume: 'Продолжить',
-                restart: 'Заново',
-                main_menu: 'В меню',
-                game_over: 'Игра окончена',
-                your_score: 'Ваш счет',
-                record: 'Рекорд',
-                play_again: 'Играть снова',
-                main_menu_2: 'В меню',
+    (function () {
+        // --- Все элементы UI ---
+        const elements = {
+            mainMenu: document.getElementById('main-menu'),
+            pauseMenu: document.getElementById('pause-menu'),
+            gameOverMenu: document.getElementById('game-over-menu'),
+            statsModal: document.getElementById('stats-modal'),
+            rulesModal: document.getElementById('rules-modal'),
+            gameWrapper: document.getElementById('game-wrapper'),
+            statsBtn: document.getElementById('stats-btn'),
+            rulesBtn: document.getElementById('rules-btn'),
+            closeStatsBtn: document.getElementById('close-stats-btn'),
+            closeRulesBtn: document.getElementById('close-rules-btn'),
+            resumeBtn: document.getElementById('resume-btn'),
+            restartBtn: document.getElementById('restart-btn'),
+            mainMenuBtn: document.getElementById('main-menu-btn'),
+            pauseBtn: document.getElementById('pause-btn'),
+            restartGameOverBtn: document.getElementById('restart-gameover-btn'),
+            mainMenuGameOverBtn: document.getElementById('main-menu-gameover-btn'),
+            gameOverTitle: document.getElementById('game-over-title'),
+            canvas: document.getElementById('canvas'),
+            nextShapeDisplay: document.getElementById("next_shape"),
+            displays: {
+                score: document.getElementById("score-val"),
+                level: document.getElementById("level-val"),
+                lines: document.getElementById("lines-val"),
+                time: document.getElementById("time-val"),
             }
         };
 
-        class Stage {
-            // ... (no changes in this class)
-            constructor() {
-                this.container = document.getElementById('game');
-                this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-                this.renderer.setSize(window.innerWidth, window.innerHeight);
-                this.renderer.setClearColor(0x000000, 0);
-                this.container.appendChild(this.renderer.domElement);
-                
-                this.scene = new THREE.Scene();
-                
-                const aspect = window.innerWidth / window.innerHeight;
-                const d = 20;
-                this.camera = new THREE.OrthographicCamera(-d * aspect, d * aspect, d, -d, -100, 1000);
-                this.camera.position.set(2, 2, 2);
-                this.camera.lookAt(new THREE.Vector3(0, 0, 0));
-                
-                this.light = new THREE.DirectionalLight(0xffffff, 0.5);
-                this.light.position.set(0, 499, 0);
-                this.scene.add(this.light);
-                
-                this.softLight = new THREE.AmbientLight(0xffffff, 0.4);
-                this.scene.add(this.softLight);
+        // --- VK Integration ---
+        let isVK = false;
+        const STATS_VK_KEY = 'tetrisGameStats_v3'; // Increased version for new stats
 
-                window.addEventListener('resize', () => this.onResize());
-                this.onResize();
-            }
-
-            setCamera(y, speed = 0.3) {
-                TweenLite.to(this.camera.position, speed, { y: y + 4, ease: Power1.easeInOut });
-                TweenLite.to(this.camera.lookAt, speed, { y: y, ease: Power1.easeInOut });
-            }
-
-            onResize() {
-                const viewSize = 30;
-                this.renderer.setSize(window.innerWidth, window.innerHeight);
-                this.camera.left = window.innerWidth / -viewSize;
-                this.camera.right = window.innerWidth / viewSize;
-                this.camera.top = window.innerHeight / viewSize;
-                this.camera.bottom = window.innerHeight / -viewSize;
-                this.camera.updateProjectionMatrix();
-            }
-
-            render = () => this.renderer.render(this.scene, this.camera);
-            add = (elem) => this.scene.add(elem);
-            remove = (elem) => this.scene.remove(elem);
-        }
-
-        class Block {
-             // ... (no changes in this class)
-            constructor(block, newDimensions = null) {
-                this.STATES = { ACTIVE: 'active', STOPPED: 'stopped', MISSED: 'missed' };
-                this.MOVE_AMOUNT = 12;
-
-                this.targetBlock = block;
-                this.index = (this.targetBlock ? this.targetBlock.index : 0) + 1;
-                this.workingPlane = this.index % 2 ? 'x' : 'z';
-                this.workingDimension = this.index % 2 ? 'width' : 'depth';
-
-                this.dimension = {
-                    width: (newDimensions && newDimensions.width) || (this.targetBlock ? this.targetBlock.dimension.width : 10),
-                    height: 2,
-                    depth: (newDimensions && newDimensions.depth) || (this.targetBlock ? this.targetBlock.dimension.depth : 10),
-                };
-                
-                this.originalDimension = { ...this.dimension };
-
-                this.position = {
-                    x: this.targetBlock ? this.targetBlock.position.x : 0,
-                    y: this.dimension.height * this.index,
-                    z: this.targetBlock ? this.targetBlock.position.z : 0,
-                };
-                
-                this.colorOffset = this.targetBlock ? this.targetBlock.colorOffset : Math.round(Math.random() * 100);
-
-                if (!this.targetBlock) {
-                    this.color = new THREE.Color(0x333344);
-                } else {
-                    const offset = this.index + this.colorOffset;
-                    const r = Math.sin(0.3 * offset) * 55 + 200;
-                    const g = Math.sin(0.3 * offset + 2) * 55 + 200;
-                    const b = Math.sin(0.3 * offset + 4) * 55 + 200;
-                    this.color = new THREE.Color(r / 255, g / 255, b / 255);
-                }
-
-                this.state = this.index > 1 ? this.STATES.ACTIVE : this.STATES.STOPPED;
-                this.speed = -0.1 - (this.index * 0.005);
-                if (this.speed < -4) this.speed = -4;
-                this.direction = this.speed;
-
-                const geometry = new THREE.BoxGeometry(this.dimension.width, this.dimension.height, this.dimension.depth);
-                geometry.applyMatrix(new THREE.Matrix4().makeTranslation(this.dimension.width / 2, this.dimension.height / 2, this.dimension.depth / 2));
-                this.material = new THREE.MeshToonMaterial({ color: this.color.getHex(), shading: THREE.FlatShading });
-                this.mesh = new THREE.Mesh(geometry, this.material);
-                this.mesh.position.set(this.position.x, this.position.y, this.position.z);
-
-                if (this.state === this.STATES.ACTIVE) {
-                    this.position[this.workingPlane] = Math.random() > 0.5 ? -this.MOVE_AMOUNT : this.MOVE_AMOUNT;
-                }
-            }
-
-            reverseDirection = () => {
-                this.direction = this.direction > 0 ? this.speed : Math.abs(this.speed);
-            }
-
-            place() {
-                this.state = this.STATES.STOPPED;
-
-                let overlap = this.targetBlock.dimension[this.workingDimension] - Math.abs(this.position[this.workingPlane] - this.targetBlock.position[this.workingPlane]);
-
-                const blocksToReturn = {
-                    plane: this.workingPlane,
-                    direction: this.direction,
-                    bonus: false
-                };
-                
-                if (this.dimension[this.workingDimension] - overlap < 0.3) {
-                    blocksToReturn.bonus = true;
-                    this.dimension.width = this.targetBlock.dimension.width;
-                    this.dimension.depth = this.targetBlock.dimension.depth;
-                    overlap = this.targetBlock.dimension[this.workingDimension];
-                    this.position.x = this.targetBlock.position.x;
-                    this.position.z = this.targetBlock.position.z;
-                }
-
-                if (overlap > 0) {
-                    const choppedDimensions = { ...this.dimension };
-                    choppedDimensions[this.workingDimension] -= overlap;
-                    this.dimension[this.workingDimension] = overlap;
-
-                    const placedGeometry = new THREE.BoxGeometry(this.dimension.width, this.dimension.height, this.dimension.depth);
-                    placedGeometry.applyMatrix(new THREE.Matrix4().makeTranslation(this.dimension.width / 2, this.dimension.height / 2, this.dimension.depth / 2));
-                    const placedMesh = new THREE.Mesh(placedGeometry, this.material);
-
-                    const choppedGeometry = new THREE.BoxGeometry(choppedDimensions.width, choppedDimensions.height, choppedDimensions.depth);
-                    choppedGeometry.applyMatrix(new THREE.Matrix4().makeTranslation(choppedDimensions.width / 2, choppedDimensions.height / 2, choppedDimensions.depth / 2));
-                    const choppedMesh = new THREE.Mesh(choppedGeometry, this.material);
-
-                    const choppedPosition = { x: this.position.x, y: this.position.y, z: this.position.z };
-
-                    if (this.position[this.workingPlane] < this.targetBlock.position[this.workingPlane]) {
-                        this.position[this.workingPlane] = this.targetBlock.position[this.workingPlane];
-                    } else {
-                        choppedPosition[this.workingPlane] += overlap;
-                    }
-
-                    placedMesh.position.set(this.position.x, this.position.y, this.position.z);
-                    choppedMesh.position.set(choppedPosition.x, choppedPosition.y, choppedPosition.z);
-
-                    blocksToReturn.placed = placedMesh;
-                    if (!blocksToReturn.bonus) blocksToReturn.chopped = choppedMesh;
-                } else {
-                    this.state = this.STATES.MISSED;
-                }
-                
-                return blocksToReturn;
-            }
-
-            tick() {
-                if (this.state === this.STATES.ACTIVE) {
-                    const value = this.position[this.workingPlane];
-                    if (value > this.MOVE_AMOUNT || value < -this.MOVE_AMOUNT) this.reverseDirection();
-                    this.position[this.workingPlane] += this.direction;
-                    this.mesh.position[this.workingPlane] = this.position[this.workingPlane];
-                }
+        async function initVK() {
+            try {
+                await vkBridge.send('VKWebAppInit');
+                isVK = true;
+                console.log('VK Bridge initialized');
+                vkBridge.send("VKWebAppShowBannerAd", { banner_location: 'bottom' })
+                    .catch(e => console.error("Banner Ad Init Error:", e));
+            } catch (error) {
+                console.error('VK Bridge init failed:', error);
+                isVK = false;
             }
         }
-
-        class Game {
-            constructor(ysdk) {
-                // --- Yandex SDK Properties ---
-                this.ysdk = ysdk;
-                this.player = null;
-                this.currentLang = 'en';
-
-                this.STATES = { MENU: 'menu', PLAYING: 'playing', PAUSED: 'paused', ENDED: 'ended', RESETTING: 'resetting' };
+        
+        const tetris = {
+            // --- Состояние игры ---
+            board: [],
+            sqs: [], 
+            curSqs: [],
+            ghostSqs: [],
+            tempShapes: null,
+            curShape: null,
+            curShapeIndex: null,
+            curX: 0,
+            curY: 0,
+            score: 0,
+            level: 1,
+            lines: 0,
+            time: 0,
+            speed: 700,
+            gameMode: 'classic',
+            maxLinesClearedInTurn: 0,
+            
+            // --- Флаги состояния ---
+            isActive: false,
+            isPaused: false,
+            isGameOver: false,
+            
+            // --- Таймеры ---
+            gameLoopTimeout: null,
+            timeCounterInterval: null,
+            avalancheTimeout: null,
+            
+            // --- Константы ---
+            pSize: 20,
+            boardHeight: 22,
+            boardWidth: 10,
+            spawnX: 4,
+            spawnY: 0,
+             shapes: [
+                [[0,0],[-1,0],[0,-1],[1,-1]],// 0: Z Red
+                [[0,0],[1,0],[0,-1],[-1,-1]],// 1: S Green
+                [[0,0],[-1,0],[1,0],[-1,-1]],// 2: L Orange
+                [[0,0],[-1,0],[1,0],[1,-1]], // 3: J Blue
+                [[0,0],[-1,0],[1,0],[0,-1]], // 4: T Purple
+                [[0,0],[0,-1],[1,0],[1,-1]], // 5: O Gray
+                [[0,0],[-1,0],[1,0],[2,0]], // 6: I Cyan
+                [[0,0]]                     // 7: BOMB
+            ],
+            
+            init: function (mode) {
+                this.gameMode = mode;
+                this.cleanup();
+                this.resetState();
                 
-                this.stage = new Stage();
-                this.ui = {
-                    body: document.body,
-                    mainMenu: document.getElementById('main-menu'),
-                    rulesModal: document.getElementById('rules-modal'),
-                    inGameUI: document.getElementById('in-game-ui'),
-                    pauseMenu: document.getElementById('pause-menu'),
-                    gameOverMenu: document.getElementById('game-over-menu'),
-                    score: document.getElementById('score'),
-                    highScore: document.getElementById('high-score'),
-                    finalScore: document.getElementById('final-score'),
-                    gameOverHighScore: document.getElementById('game-over-high-score'),
-                    perfectPlacementText: document.getElementById('perfect-placement-text'),
-                    gameCanvas: document.getElementById('game')
-                };
-                this.buttons = {
-                    start: document.getElementById('start-button'),
-                    rules: document.getElementById('rules-button'),
-                    closeRules: document.getElementById('close-rules-button'),
-                    pause: document.getElementById('pause-button'),
-                    resume: document.getElementById('resume-button'),
-                    restart: document.getElementById('restart-button'),
-                    menu: document.getElementById('menu-button'),
-                    restartGameOver: document.getElementById('restart-game-over-button'),
-                    menuGameOver: document.getElementById('menu-game-over-button')
-                };
-
-                this.newBlocks = new THREE.Group();
-                this.placedBlocks = new THREE.Group();
-                this.choppedBlocks = new THREE.Group();
-                this.perfectSliceGroup = new THREE.Group();
-                this.starsGroup = new THREE.Group();
-                this.stage.add(this.newBlocks);
-                this.stage.add(this.placedBlocks);
-                this.stage.add(this.choppedBlocks);
-                this.stage.add(this.perfectSliceGroup);
-                this.stage.scene.add(this.starsGroup);
-                
-                this.perfectCombo = 0;
-                this.initialBlockSize = { width: 10, depth: 10 };
-                this.blocksSinceColorChange = 0;
-                
-                this.bgColors = {
-                    top: new THREE.Color(0x1a237e),
-                    bottom: new THREE.Color(0x0d47a1),
-                    targetTop: new THREE.Color(0x1a237e),
-                    targetBottom: new THREE.Color(0x0d47a1)
-                };
-
-                this.init();
-            }
-
-            async init() {
-                this.setLanguage();
-                await this.initPlayer();
-                this.showBannerAd();
-                this.addStars();
+                this.initBoard();
+                this.updateInfo();
+                this.initShapes();
                 this.bindEvents();
-                this.setState(this.STATES.MENU);
-                this.tick();
-            }
+                this.play();
 
-            // --- Yandex SDK Integration ---
-            setLanguage() {
-                const lang = this.ysdk.environment.i18n.lang;
-                this.currentLang = (lang === 'ru') ? 'ru' : 'en';
-                document.documentElement.lang = this.currentLang;
-                
-                document.querySelectorAll('[data-lang-key]').forEach(elem => {
-                    const key = elem.dataset.langKey;
-                    if (translations[this.currentLang] && translations[this.currentLang][key]) {
-                        elem.innerHTML = translations[this.currentLang][key];
-                    }
-                });
-            }
-
-            async initPlayer() {
-                try {
-                    this.player = await this.ysdk.getPlayer();
-                    if (this.player.getMode() === 'lite') {
-                        // Player is not authorized, use localStorage
-                        await this.loadHighScore(false);
-                    } else {
-                        // Player is authorized, use Yandex Cloud Save
-                        await this.loadHighScore(true);
-                    }
-                } catch (error) {
-                    console.error('Player init failed:', error);
-                    // Fallback to localStorage on error
-                    await this.loadHighScore(false);
+                if (this.gameMode === 'avalanche') {
+                    this.scheduleAvalanche();
                 }
-            }
+            },
 
-            async saveHighScore(isAuthorized) {
-                const dataString = this.highScore.toString();
-                if (isAuthorized && this.player) {
-                    try {
-                        await this.player.setData({ highScore: this.highScore });
-                    } catch (e) {
-                        console.error('Yandex Cloud Save failed:', e);
-                        localStorage.setItem('TowerBlocksHighScore', dataString); // Fallback
-                    }
+            cleanup: function() {
+                this.clearTimers();
+                this.unbindEvents();
+                elements.canvas.innerHTML = '';
+            },
+
+            resetState: function() {
+                this.board = []; this.sqs = []; this.curSqs = [];
+                this.tempShapes = null;
+                this.score = 0; this.level = 1; this.lines = 0; this.time = 0; this.speed = 700;
+                this.maxLinesClearedInTurn = 0;
+                this.isActive = true; this.isPaused = false; this.isGameOver = false;
+
+                if (this.gameMode === 'demolition') {
+                    elements.displays.level.parentElement.style.display = 'none';
                 } else {
-                    localStorage.setItem('TowerBlocksHighScore', dataString);
+                    elements.displays.level.parentElement.style.display = 'block';
                 }
-            }
+            },
 
-            async loadHighScore(isAuthorized) {
-                let loadedData = '0';
-                if (isAuthorized && this.player) {
-                    try {
-                        const data = await this.player.getData(['highScore']);
-                        if (data.highScore) {
-                            loadedData = data.highScore.toString();
-                        }
-                    } catch (e) {
-                        console.error('Yandex Cloud Load failed:', e);
-                        loadedData = localStorage.getItem('TowerBlocksHighScore') || '0'; // Fallback
-                    }
-                } else {
-                    loadedData = localStorage.getItem('TowerBlocksHighScore') || '0';
-                }
-                this.highScore = parseInt(loadedData, 10);
-                this.ui.highScore.innerText = this.highScore;
-            }
+            initBoard: function () {
+                this.board = Array(this.boardHeight).fill(0).map(() => Array(this.boardWidth).fill(null));
+            },
             
-            showBannerAd() {
-                if (this.ysdk) {
-                     this.ysdk.adv.showBannerAdv();
-                }
-            }
+            updateInfo: function() {
+                elements.displays.score.textContent = this.score;
+                elements.displays.level.textContent = this.level;
+                elements.displays.lines.textContent = this.lines;
+                elements.displays.time.textContent = this.formatTime(this.time);
+            },
             
-            showInterstitialAd() {
-                 if(this.ysdk) {
-                    this.ysdk.adv.showFullscreenAdv({
-                        callbacks: {
-                            onOpen: () => console.log('Interstitial ad opened.'),
-                            onClose: (wasShown) => console.log(`Interstitial ad closed. Was shown: ${wasShown}`),
-                            onError: (error) => console.error('Interstitial ad error:', error)
-                        }
-                    });
-                }
-            }
+            formatTime: function(seconds) {
+                const min = Math.floor(seconds / 60).toString().padStart(2, '0');
+                const sec = (seconds % 60).toString().padStart(2, '0');
+                return `${min}:${sec}`;
+            },
 
-            bindEvents() {
-                this.buttons.start.addEventListener('click', () => this.startGame());
-                this.buttons.rules.addEventListener('click', () => this.ui.rulesModal.classList.remove('hidden'));
-                this.buttons.closeRules.addEventListener('click', () => this.ui.rulesModal.classList.add('hidden'));
-                this.buttons.pause.addEventListener('click', () => this.togglePause());
-                this.buttons.resume.addEventListener('click', () => this.togglePause());
-                this.buttons.restart.addEventListener('click', () => this.restartGame());
-                this.buttons.menu.addEventListener('click', () => this.goToMenu());
-                this.buttons.restartGameOver.addEventListener('click', () => this.restartGame());
-                this.buttons.menuGameOver.addEventListener('click', () => this.goToMenu());
+            initShapes: function () {
+                if (!this.tempShapes || this.tempShapes.length <= 1) this.initTempShapes();
+                else this.tempShapes.shift();
                 
-                window.addEventListener('keydown', (e) => { if (e.keyCode === 32) this.onAction(); });
-                this.stage.container.addEventListener('click', () => this.onAction());
-                this.stage.container.addEventListener('touchstart', (e) => {
-                    e.preventDefault();
-                    this.onAction();
+                this.curShapeIndex = this.tempShapes[0];
+                this.curShape = JSON.parse(JSON.stringify(this.shapes[this.curShapeIndex]));
+                this.initNextShape();
+
+                let minY = 0;
+                this.curShape.forEach(([, y]) => {
+                    if (y < minY) minY = y;
                 });
-            }
 
-            setState(newState) {
-                this.state = newState;
-                
-                this.ui.mainMenu.classList.add('hidden');
-                this.ui.rulesModal.classList.add('hidden');
-                this.ui.inGameUI.classList.add('hidden');
-                this.ui.pauseMenu.classList.add('hidden');
-                this.ui.gameOverMenu.classList.add('hidden');
-                this.ui.gameCanvas.style.display = 'none';
-                document.getElementById('container').className = 'container';
-                
-                this.showBannerAd();
+                this.setCurCoords(this.spawnX, -minY);
 
-                switch (newState) {
-                    case this.STATES.MENU:
-                        this.ui.mainMenu.classList.remove('hidden');
-                        this.bgColors.targetTop.setHex(0x1a237e);
-                        this.bgColors.targetBottom.setHex(0x0d47a1);
-                        break;
-                    case this.STATES.PLAYING:
-                        this.ui.inGameUI.classList.remove('hidden');
-                        this.ui.gameCanvas.style.display = 'block';
-                        document.getElementById('container').classList.add('playing');
-                        break;
-                    case this.STATES.PAUSED:
-                        this.ui.inGameUI.classList.remove('hidden');
-                        this.ui.pauseMenu.classList.remove('hidden');
-                        this.ui.gameCanvas.style.display = 'block';
-                        break;
-                    case this.STATES.ENDED:
-                        this.ui.inGameUI.classList.remove('hidden');
-                        this.ui.gameOverMenu.classList.remove('hidden');
-                        this.ui.gameCanvas.style.display = 'block';
-                        document.getElementById('container').classList.add('ended');
-                        break;
-                }
-            }
-
-            onAction() {
-                if (this.state === this.STATES.PLAYING) {
-                    this.placeBlock();
-                }
-            }
-            
-            togglePause() {
-                if (this.state === this.STATES.PLAYING) {
-                    this.setState(this.STATES.PAUSED);
-                } else if (this.state === this.STATES.PAUSED) {
-                    this.setState(this.STATES.PLAYING);
-                }
-            }
-
-            startGame() {
-                if (this.state !== this.STATES.PLAYING) {
-                    this.reset();
-                    this.setState(this.STATES.PLAYING);
-                    this.addBlock();
-                }
-            }
-            
-            goToMenu() {
-                this.setState(this.STATES.RESETTING);
-                setTimeout(() => {
-                    this.reset();
-                    this.setState(this.STATES.MENU);
-                }, 500);
-            }
-
-            restartGame() {
-                this.setState(this.STATES.RESETTING);
-                const oldBlocks = this.placedBlocks.children;
-                const removeSpeed = 0.2;
-                const delayAmount = 0.02;
-
-                for (let i = 0; i < oldBlocks.length; i++) {
-                    TweenLite.to(oldBlocks[i].scale, removeSpeed, { x: 0, y: 0, z: 0, delay: (oldBlocks.length - i) * delayAmount, ease: Power1.easeIn });
-                }
-                
-                setTimeout(() => {
-                    this.startGame();
-                }, (oldBlocks.length * delayAmount + removeSpeed) * 1000);
-            }
-            
-            reset() {
-                [this.newBlocks, this.placedBlocks, this.choppedBlocks, this.perfectSliceGroup].forEach(group => {
-                    while(group.children.length > 0) group.remove(group.children[0]);
-                });
-                this.blocks = [];
-                this.perfectCombo = 0;
-                this.blocksSinceColorChange = 0;
-                this.addBlock(); 
-                this.stage.setCamera(2, 0);
-                this.ui.score.innerText = '0';
-            }
-
-            placeBlock() {
-                const currentBlock = this.blocks[this.blocks.length - 1];
-                if (!currentBlock || currentBlock.state !== currentBlock.STATES.ACTIVE) return;
-
-                const newBlocks = currentBlock.place();
-                this.newBlocks.remove(currentBlock.mesh);
-
-                if (newBlocks.placed) {
-                    this.placedBlocks.add(newBlocks.placed);
-                    this.blocksSinceColorChange++;
-                    
-                    if(this.blocksSinceColorChange >= 5) {
-                        this.blocksSinceColorChange = 0;
-                        this.bgColors.targetBottom.copy(this.bgColors.targetTop);
-                        this.bgColors.targetTop.copy(this.getPastelColor(currentBlock.color));
-                    }
-
-
-                    if (newBlocks.bonus) {
-                        this.perfectCombo++;
-                        
-                        if (this.perfectCombo >= 6) {
-                            const comboBonus = (this.perfectCombo - 5) * 0.25;
-                            const newWidth = Math.min(this.initialBlockSize.width, currentBlock.originalDimension.width + comboBonus);
-                            const newDepth = Math.min(this.initialBlockSize.depth, currentBlock.originalDimension.depth + comboBonus);
-
-                            currentBlock.dimension.width = newWidth;
-                            currentBlock.dimension.depth = newDepth;
-                            
-                            newBlocks.placed.scale.set(
-                                newWidth / currentBlock.originalDimension.width,
-                                1,
-                                newDepth / currentBlock.originalDimension.depth
-                            );
-                        }
-                        
-                        this.showPerfectPlacementText();
-                        this.triggerVibration();
-                        this.triggerPerfectSlice(newBlocks.placed.position, currentBlock.dimension);
-                    } else {
-                        this.perfectCombo = 0;
-                    }
-                }
-                
-                if (newBlocks.chopped) {
-                    this.choppedBlocks.add(newBlocks.chopped);
-                    const positionParams = { y: '-=30', ease: Power1.easeIn, onComplete: () => this.choppedBlocks.remove(newBlocks.chopped) };
-                    const plane = newBlocks.plane;
-                    if (newBlocks.chopped.position[plane] > newBlocks.placed.position[plane]) {
-                        positionParams[plane] = `+=${40 * Math.abs(newBlocks.direction)}`;
-                    } else {
-                        positionParams[plane] = `-=${40 * Math.abs(newBlocks.direction)}`;
-                    }
-                    TweenLite.to(newBlocks.chopped.position, 1, positionParams);
-                }
-
-                this.addBlock();
-            }
-
-            addBlock() {
-                const lastBlock = this.blocks.length > 0 ? this.blocks[this.blocks.length - 1] : null;
-                if (lastBlock && lastBlock.state === lastBlock.STATES.MISSED) {
-                    return this.endGame();
-                }
-                
-                const score = Math.max(0, this.blocks.length - 1);
-                this.ui.score.innerText = String(score);
-
-                let newDimensions = null;
-                if (this.perfectCombo >= 6 && lastBlock) {
-                    newDimensions = {
-                        width: lastBlock.dimension.width,
-                        depth: lastBlock.dimension.depth
-                    };
-                }
-
-                const newKidOnTheBlock = new Block(lastBlock, newDimensions);
-                this.blocks.push(newKidOnTheBlock);
-                
-                if (newKidOnTheBlock.state === newKidOnTheBlock.STATES.ACTIVE) {
-                    this.newBlocks.add(newKidOnTheBlock.mesh);
+                if (this.checkMove(this.curX, this.curY, this.curShape)) {
+                    this.drawShape();
                 } else {
-                    this.placedBlocks.add(newKidOnTheBlock.mesh);
+                    this.gameOver();
+                }
+            },
+            initNextShape: function () {
+                if (this.tempShapes.length <=1) this.initTempShapes();
+                this.nextShapeIndex = this.tempShapes[1];
+                this.drawNextShape();
+            },
+            initTempShapes: function () {
+                let baseShapes = Array.from({length: this.shapes.length - 1}, (_, i) => i);
+                this.tempShapes = [];
+                for(let i = 0; i < 2; i++) { // Generate 2 sets of shapes
+                     let tempSet = [...baseShapes];
+                     for (let k = tempSet.length - 1; k > 0; k--) {
+                        const j = Math.floor(Math.random() * (k + 1));
+                        [tempSet[k], tempSet[j]] = [tempSet[j], tempSet[k]];
+                     }
+                     this.tempShapes.push(...tempSet);
                 }
 
-                this.stage.setCamera(this.blocks.length * 2);
-            }
-            
-            showPerfectPlacementText() {
-                const text = this.ui.perfectPlacementText;
-                text.style.transform = 'translateY(20px)';
-                TweenLite.to(text.style, 0.3, { opacity: 1 });
-                TweenLite.to(text, 0.4, { transform: 'translateY(0px)' });
-                TweenLite.to(text.style, 0.3, { opacity: 0, delay: 0.5 });
-            }
-
-            triggerVibration() {
-                if (navigator.vibrate) {
-                    navigator.vibrate(100);
+                if (this.gameMode === 'demolition' && Math.random() < 0.25) { // 25% chance for a bomb
+                    this.tempShapes.splice(1, 0, 7); // Insert bomb as the next shape
                 }
-            }
-
-            triggerPerfectSlice(position, dimension) {
-                const sliceHeight = 0.1;
-                const padding = 1.5;
-                const sliceGeometry = new THREE.BoxGeometry(dimension.width + padding, sliceHeight, dimension.depth + padding);
-                const sliceMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true });
-                const sliceMesh = new THREE.Mesh(sliceGeometry, sliceMaterial);
-                
-                sliceMesh.position.set(position.x + dimension.width / 2, position.y + (dimension.height/2), position.z + dimension.depth / 2);
-                sliceMesh.scale.set(0, 1, 0);
-                this.perfectSliceGroup.add(sliceMesh);
-                
-                TweenLite.to(sliceMesh.scale, 0.2, { x: 1, z: 1, ease: Power1.easeOut });
-                TweenLite.to(sliceMesh.scale, 0.3, { x: 0, z: 0, ease: Power1.easeIn, delay: 0.2, onComplete: () => {
-                    this.perfectSliceGroup.remove(sliceMesh);
-                }});
-            }
+            },
             
-            addStars() {
-                const starGeometry = new THREE.SphereGeometry(0.1, 8, 8);
-                const starMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
-                for(let i = 0; i < 150; i++) {
-                    const star = new THREE.Mesh(starGeometry, starMaterial);
-                    star.position.set(
-                        (Math.random() - 0.5) * 200,
-                        (Math.random() - 0.5) * 200,
-                        (Math.random() - 0.5) * 200
+            drawNextShape: function () {
+                elements.nextShapeDisplay.innerHTML = "";
+                const shape = this.shapes[this.nextShapeIndex];
+                let minX = 0, maxX = 0, minY = 0, maxY = 0;
+                shape.forEach(([x, y]) => {
+                    minX = Math.min(minX, x); maxX = Math.max(maxX, x);
+                    minY = Math.min(minY, y); maxY = Math.max(maxY, y);
+                });
+                const width = (maxX - minX + 1) * this.pSize;
+                const height = (maxY - minY + 1) * this.pSize;
+                const containerWidth = elements.nextShapeDisplay.clientWidth;
+                const containerHeight = elements.nextShapeDisplay.clientHeight;
+
+                const offsetX = (containerWidth - width) / 2; 
+                const offsetY = (containerHeight - height) / 2;
+
+                shape.forEach(point => {
+                    const sq = this.createSquare(
+                        (point[0] - minX) * this.pSize + offsetX, 
+                        (point[1] - minY) * this.pSize + offsetY, 
+                        this.nextShapeIndex
                     );
-                    this.starsGroup.add(star);
+                    elements.nextShapeDisplay.appendChild(sq);
+                });
+            },
+            drawShape: function () {
+                this.removeSqs(this.curSqs);
+                this.curSqs = [];
+                this.curShape.forEach(point => {
+                    const sqX = (point[0] + this.curX) * this.pSize;
+                    const sqY = (point[1] + this.curY) * this.pSize;
+                    this.curSqs.push(this.createSquare(sqX, sqY, this.curShapeIndex));
+                });
+                this.curSqs.forEach(sq => elements.canvas.appendChild(sq));
+                
+                if (this.gameMode !== 'demolition' || this.curShapeIndex !== 7) {
+                     this.drawGhostShape();
+                } else {
+                    this.removeSqs(this.ghostSqs);
+                    this.ghostSqs = [];
                 }
-            }
-            
-            animateStars() {
-                const cameraY = this.stage.camera.position.y;
-                // Move the entire starfield with the camera
-                this.starsGroup.position.y = cameraY;
-                this.starsGroup.rotation.y += 0.0002;
+            },
+            drawGhostShape: function() {
+                this.removeSqs(this.ghostSqs);
+                this.ghostSqs = [];
+                let ghostY = this.curY;
+                while(this.checkMove(this.curX, ghostY + 1, this.curShape)) {
+                    ghostY++;
+                }
 
-                // Wrap stars to create an infinite field
-                this.starsGroup.children.forEach(star => {
-                    if (star.position.y + cameraY < cameraY - 100) {
-                        star.position.y += 200;
+                this.curShape.forEach(point => {
+                    const sqX = (point[0] + this.curX) * this.pSize;
+                    const sqY = (point[1] + ghostY) * this.pSize;
+                    const ghostSq = this.createSquare(sqX, sqY, this.curShapeIndex);
+                    ghostSq.classList.add('ghost');
+                    this.ghostSqs.push(ghostSq);
+                });
+                this.ghostSqs.forEach(sq => elements.canvas.appendChild(sq));
+            },
+            createSquare: function (x, y, type) {
+                const el = document.createElement("div");
+                el.className = "square type" + type;
+                el.style.left = x + "px"; el.style.top = y + "px";
+                return el;
+            },
+            removeSqs: function (sqsArray) {
+                sqsArray.forEach(sq => sq.parentElement?.removeChild(sq));
+            },
+            setCurCoords: function (x, y) { this.curX = x; this.curY = y; },
+
+            eventHandlers: {},
+            bindEvents: function () {
+                this.eventHandlers.keyDown = this.handleKey.bind(this);
+                document.addEventListener("keydown", this.eventHandlers.keyDown);
+
+                const controls = { 'left-btn': 'L', 'right-btn': 'R', 'down-btn': 'D', 'rotate-btn': 'RT' };
+                this.eventHandlers.mobile = [];
+                for (const [id, move] of Object.entries(controls)) {
+                    const btn = document.getElementById(id);
+                    let interval;
+                    const startMove = (e) => {
+                        e.preventDefault();
+                        if (interval || this.isPaused || this.isGameOver) return;
+                        this.move(move);
+                        interval = setInterval(() => this.move(move), 120);
+                    };
+                    const endMove = () => { clearInterval(interval); interval = null; };
+                    
+                    btn.addEventListener('mousedown', startMove);
+                    btn.addEventListener('touchstart', startMove, { passive: false });
+                    btn.addEventListener('mouseup', endMove);
+                    btn.addEventListener('mouseleave', endMove);
+                    btn.addEventListener('touchend', endMove);
+
+                    this.eventHandlers.mobile.push({btn, startMove, endMove});
+                }
+            },
+            unbindEvents: function() {
+                if (this.eventHandlers.keyDown) {
+                    document.removeEventListener('keydown', this.eventHandlers.keyDown);
+                    this.eventHandlers.keyDown = null;
+                }
+                if (this.eventHandlers.mobile) {
+                    this.eventHandlers.mobile.forEach(({btn, startMove, endMove}) => {
+                        btn.removeEventListener('mousedown', startMove);
+                        btn.removeEventListener('touchstart', startMove);
+                        btn.removeEventListener('mouseup', endMove);
+                        btn.removeEventListener('mouseleave', endMove);
+                        btn.removeEventListener('touchend', endMove);
+                    });
+                    this.eventHandlers.mobile = [];
+                }
+            },
+            handleKey: function (e) {
+                if (!this.isActive || this.isGameOver) return;
+                if (e.keyCode === 27 || e.keyCode === 80) { 
+                    e.preventDefault(); 
+                    this.togglePause(); 
+                    return; 
+                }
+                if(this.isPaused) return;
+
+                switch (e.keyCode) {
+                    case 37: case 65: e.preventDefault(); this.move("L"); break; // Left Arrow / A
+                    case 38: case 87: e.preventDefault(); this.move("RT"); break; // Up Arrow / W
+                    case 39: case 68: e.preventDefault(); this.move("R"); break; // Right Arrow / D
+                    case 40: case 83: e.preventDefault(); this.move("D"); break; // Down Arrow / S
+                }
+            },
+            gameOver: function () {
+                this.clearTimers();
+                this.isActive = false; this.isGameOver = true;
+                
+                let title = "Конец Игры";
+                elements.gameOverTitle.textContent = title;
+                elements.gameOverMenu.classList.add('visible');
+                stats.save(this.gameMode, this.score, this.lines, this.time, this.level);
+
+                if(isVK) {
+                    vkBridge.send('VKWebAppShowNativeAds', { ad_format: 'interstitial' })
+                            .catch(e => console.error("Interstitial Ad Error:", e));
+                }
+            },
+            play: function () {
+                if (this.isGameOver) return;
+                this.isActive = true; this.isPaused = false;
+                this.startGameLoop();
+                this.startTimeCounter();
+            },
+            togglePause: function () {
+                if (this.isGameOver) return;
+                this.isPaused = !this.isPaused;
+                if (this.isPaused) {
+                    this.clearTimers();
+                    elements.pauseMenu.classList.add('visible');
+                } else {
+                    elements.pauseMenu.classList.remove('visible');
+                    this.play();
+                }
+            },
+            startGameLoop: function() {
+                this.gameLoopTimeout = setTimeout(() => this.gameLoop(), this.speed);
+            },
+            startTimeCounter: function() {
+                this.timeCounterInterval = setInterval(() => {
+                    this.time++;
+                    this.updateInfo();
+                }, 1000);
+            },
+            clearTimers: function () {
+                clearTimeout(this.gameLoopTimeout);
+                clearInterval(this.timeCounterInterval);
+                clearTimeout(this.avalancheTimeout);
+                this.gameLoopTimeout = null;
+                this.timeCounterInterval = null;
+                this.avalancheTimeout = null;
+            },
+            
+            gameLoop: function() {
+                if (this.isPaused || !this.isActive) return;
+                
+                let clearedRows = [];
+
+                if (this.checkMove(this.curX, this.curY + 1, this.curShape)) {
+                    this.curY++;
+                    this.drawShape();
+                } else {
+                    if (this.curY < 0) {
+                        this.gameOver();
+                        return;
                     }
-                     if (star.position.y + cameraY > cameraY + 100) {
-                        star.position.y -= 200;
+
+                    if (this.gameMode === 'demolition' && this.curShapeIndex === 7) {
+                        this.detonateBomb(this.curX, this.curY);
+                        return; // Skip normal placement logic
+                    }
+
+                    this.placeShape();
+                    clearedRows = this.checkRows();
+                    if (clearedRows.length === 0) {
+                        this.calcScore({ shape: true });
+                        this.checkLevelUp();
+                        if(this.isGameOver) return;
+                        this.initShapes();
+                    }
+                }
+
+                if (!this.isGameOver && clearedRows.length === 0) {
+                    this.startGameLoop();
+                }
+            },
+
+            move: function (dir) {
+                if (this.isPaused || this.isGameOver) return;
+                let tempX = this.curX, tempY = this.curY;
+                
+                if (dir === "RT") { this.rotate(); return; }
+                
+                switch (dir) {
+                    case "L": tempX--; break;
+                    case "R": tempX++; break;
+                    case "D": tempY++; break;
+                }
+
+                if (this.checkMove(tempX, tempY, this.curShape)) {
+                    this.setCurCoords(tempX, tempY);
+                    this.drawShape();
+                    if (dir === 'D') {
+                        this.calcScore({ softDrop: 1 });
+                        clearTimeout(this.gameLoopTimeout);
+                        this.startGameLoop();
+                    }
+                }
+            },
+            rotate: function () {
+                if (this.curShapeIndex >= 5) return; // O-shape and Bomb don't rotate
+                const tempShape = this.curShape.map(([x, y]) => [-y, x]);
+                const kicks = [0, 1, -1, 2, -2];
+                for (const kick of kicks) {
+                    if (this.checkMove(this.curX + kick, this.curY, tempShape)) {
+                        this.curX += kick;
+                        this.curShape = tempShape;
+                        this.drawShape();
+                        return;
+                    }
+                }
+            },
+            checkMove: (x, y, p) => !tetris.isOB(x, y, p) && !tetris.isCollision(x, y, p),
+            isCollision: function (x, y, p) {
+                return p.some(([px, py]) => {
+                    const newX = px + x, newY = py + y;
+                    return newY >= 0 && this.board[newY]?.[newX] !== null;
+                });
+            },
+            isOB: function (x, y, p) {
+                return p.some(([px, py]) => {
+                    const newX = px + x, newY = py + y;
+                    return newX < 0 || newX >= this.boardWidth || newY >= this.boardHeight;
+                });
+            },
+            
+            placeShape: function() {
+                this.markBoardShape(this.curX, this.curY, this.curShape);
+                this.removeSqs(this.curSqs);
+                this.removeSqs(this.ghostSqs);
+                this.redrawAllBlocks();
+            },
+            markBoardShape: function (x, y, p) {
+                p.forEach(([px, py]) => {
+                    const boardY = py + y;
+                    const boardX = px + x;
+                    if (boardY >= 0) {
+                        this.board[boardY][boardX] = this.curShapeIndex;
                     }
                 });
-            }
-
-            getPastelColor(color) {
-                const tempColor = color.clone();
-                const white = new THREE.Color(0xffffff);
-                tempColor.lerp(white, 0.75); // Mix with 75% white for a milkier look
-                return tempColor;
-            }
-
-            updateBackground() {
-                // Slower lerp for a much smoother transition
-                this.bgColors.top.lerp(this.bgColors.targetTop, 0.005);
-                this.bgColors.bottom.lerp(this.bgColors.targetBottom, 0.005);
-                
-                const topHex = '#' + this.bgColors.top.getHexString();
-                const bottomHex = '#' + this.bgColors.bottom.getHexString();
-                
-                document.documentElement.style.setProperty('--bg-top', topHex);
-                document.documentElement.style.setProperty('--bg-bottom', bottomHex);
-            }
-
-            async endGame() {
-                const score = this.blocks.length - 2;
-                if (score > this.highScore) {
-                    this.highScore = score;
-                    this.ui.highScore.innerText = this.highScore;
-                    const isAuthorized = this.player && this.player.getMode() !== 'lite';
-                    await this.saveHighScore(isAuthorized);
+            },
+            checkRows: function () {
+                let clearedRows = [];
+                for (let y = this.boardHeight - 1; y >= 0; y--) {
+                    if (this.isRowFull(y)) clearedRows.push(y);
                 }
-                this.ui.finalScore.innerText = score;
-                this.ui.gameOverHighScore.innerText = this.highScore;
-                this.setState(this.STATES.ENDED);
-                
-                if(score > 50) {
-                    this.showInterstitialAd();
+                if (clearedRows.length > 0) {
+                    this.animateAndRemoveRows(clearedRows);
                 }
-            }
+                return clearedRows;
+            },
+            isRowFull: function(y) {
+                return this.board[y].every(cell => cell !== null);
+            },
+            animateAndRemoveRows: function(rows) {
+                this.maxLinesClearedInTurn = Math.max(this.maxLinesClearedInTurn, rows.length);
 
-            tick = () => {
-                this.animateStars();
-
-                if (this.state === this.STATES.PLAYING || this.state === this.STATES.ENDED) {
-                    const topBlock = this.blocks[this.blocks.length - 1];
-                    if (topBlock && topBlock.state === topBlock.STATES.ACTIVE) {
-                        topBlock.tick();
+                rows.forEach(y => {
+                    for (let x = 0; x < this.boardWidth; x++) {
+                        const sqToRemove = this.sqs.find(sq => {
+                            const [sqX, sqY] = this.getPos(sq);
+                            return sqX === x && sqY === y;
+                        });
+                        sqToRemove?.classList.add('line-clear');
+                    }
+                });
+                
+                setTimeout(() => {
+                    this.removeRows(rows);
+                    this.calcScore({ lines: rows.length });
+                    this.checkLevelUp();
+                    if (!this.isGameOver) {
+                        this.initShapes();
+                        this.startGameLoop();
+                    }
+                }, 300);
+            },
+            removeRows: function(rowsToRemove) {
+                rowsToRemove.sort((a, b) => a - b).forEach(y => {
+                    this.board.splice(y, 1);
+                    this.board.unshift(Array(this.boardWidth).fill(null));
+                });
+                this.redrawAllBlocks();
+            },
+            redrawAllBlocks: function() {
+                this.removeSqs(this.sqs);
+                this.sqs = [];
+                for (let y = 0; y < this.boardHeight; y++) {
+                    for (let x = 0; x < this.boardWidth; x++) {
+                        if (this.board[y][x] !== null) {
+                            const type = this.board[y][x];
+                            const sq = this.createSquare(x * this.pSize, y * this.pSize, type);
+                            elements.canvas.appendChild(sq);
+                            this.sqs.push(sq);
+                        }
                     }
                 }
-                this.updateBackground();
-                this.stage.render();
-                requestAnimationFrame(this.tick);
+            },
+            getPos: (block) => [Math.round(parseInt(block.style.left)/tetris.pSize), Math.round(parseInt(block.style.top)/tetris.pSize)],
+
+            calcScore: function (args) {
+                const lines = args.lines || 0;
+                if (lines > 0) {
+                    const lineScores = [0, 40, 100, 300, 1200];
+                    this.score += lineScores[lines] * this.level;
+                    this.lines += lines;
+                }
+                if (args.shape) this.score += 5;
+                if (args.softDrop) this.score += args.softDrop;
+                if (args.bombClear) this.score += args.bombClear * 10;
+                this.updateInfo();
+            },
+            checkLevelUp: function () {
+                if (this.gameMode === 'classic' && this.lines >= this.level * 10) {
+                   this.level++;
+                   this.speed = Math.max(100, this.speed - 60);
+                } else if (this.gameMode === 'avalanche') {
+                    const newLevel = Math.floor(this.lines / 5) + 1;
+                    if(newLevel > this.level) {
+                        this.level = newLevel;
+                    }
+                }
+                this.updateInfo();
+            },
+
+            // --- Avalanche Mode ---
+            scheduleAvalanche: function() {
+                if (this.isPaused || this.isGameOver) return;
+                const interval = Math.max(3000, 10000 - (this.level * 500));
+                this.avalancheTimeout = setTimeout(() => this.triggerAvalanche(), interval);
+            },
+            triggerAvalanche: function() {
+                if (this.isPaused || this.isGameOver) return;
+                // Shift every row up
+                this.board.shift();
+                
+                // Add new garbage row at the bottom
+                const newRow = Array(this.boardWidth).fill(5); // Gray blocks
+                const emptySpot = Math.floor(Math.random() * this.boardWidth);
+                newRow[emptySpot] = null;
+                this.board.push(newRow);
+
+                // Check for game over
+                if (this.board[0].some(cell => cell !== null)) {
+                    this.redrawAllBlocks();
+                    this.gameOver();
+                    return;
+                }
+                
+                this.redrawAllBlocks();
+                this.scheduleAvalanche();
+            },
+
+            // --- Demolition Mode ---
+            detonateBomb: function(x, y) {
+                this.removeSqs(this.curSqs);
+                let clearedCount = 0;
+                for(let i = -1; i <= 1; i++) {
+                    for(let j = -1; j <= 1; j++) {
+                        const checkX = x + j;
+                        const checkY = y + i;
+                        if(checkY >= 0 && checkY < this.boardHeight && checkX >=0 && checkX < this.boardWidth) {
+                             if(this.board[checkY][checkX] !== null) {
+                                this.board[checkY][checkX] = null;
+                                clearedCount++;
+                             }
+                        }
+                    }
+                }
+                
+                this.redrawAllBlocks(); // Redraw once before animation
+                this.sqs.forEach(sq => { // Find squares in blast radius to animate
+                    const [sqX, sqY] = this.getPos(sq);
+                     for(let i = -1; i <= 1; i++) {
+                        for(let j = -1; j <= 1; j++) {
+                           if(sqX === x+j && sqY === y+i) {
+                               sq.classList.add('bomb-clear');
+                           }
+                        }
+                    }
+                });
+                
+                setTimeout(() => {
+                    this.redrawAllBlocks();
+                    this.calcScore({ bombClear: clearedCount });
+                    this.initShapes();
+                    this.startGameLoop();
+                }, 400);
             }
+        };
+
+        const stats = {
+            data: {},
+            async load() {
+                let loadedData = null;
+                if (isVK) {
+                    try {
+                        const data = await vkBridge.send('VKWebAppStorageGet', { keys: [STATS_VK_KEY] });
+                        if (data.keys[0].value) {
+                            loadedData = data.keys[0].value;
+                        }
+                    } catch (e) { console.error('VK Storage load failed:', e); }
+                }
+                if (!loadedData) {
+                    loadedData = localStorage.getItem(STATS_VK_KEY);
+                }
+                
+                const defaultStats = {
+                    classic: { highScore: 0, maxLevel: 0 },
+                    avalanche: { highScore: 0, maxLines: 0 },
+                    demolition: { highScore: 0, bestTime: Infinity }
+                };
+
+                this.data = loadedData ? JSON.parse(loadedData) : defaultStats;
+
+                for (const mode in defaultStats) {
+                    if (!this.data[mode]) {
+                        this.data[mode] = defaultStats[mode];
+                    }
+                }
+            },
+            async save(mode, score, lines, time, level) {
+                if (!this.data[mode]) return;
+                
+                if (mode === 'classic') {
+                    this.data[mode].highScore = Math.max(this.data[mode].highScore, score);
+                    this.data[mode].maxLevel = Math.max(this.data[mode].maxLevel, level);
+                } else if (mode === 'avalanche') {
+                    this.data[mode].highScore = Math.max(this.data[mode].highScore, score);
+                    this.data[mode].maxLines = Math.max(this.data[mode].maxLines, lines);
+                } else if (mode === 'demolition') {
+                    this.data[mode].highScore = Math.max(this.data[mode].highScore, score);
+                    if (lines >= 40) { // Win condition for demolition mode
+                         this.data[mode].bestTime = Math.min(this.data[mode].bestTime, time);
+                    }
+                }
+                
+                const dataString = JSON.stringify(this.data);
+                localStorage.setItem(STATS_VK_KEY, dataString);
+                if (isVK) {
+                    try {
+                        await vkBridge.send('VKWebAppStorageSet', { key: STATS_VK_KEY, value: dataString });
+                    } catch (e) { console.error('VK Storage save failed:', e); }
+                }
+            },
+            display: function() {
+                const grid = document.getElementById('stats-grid');
+                grid.innerHTML = `
+                    <div class="stat-category">
+                        <h3>Классика</h3>
+                        <div class="stat-item"><span>Рекорд:</span> <span>${this.data.classic.highScore}</span></div>
+                        <div class="stat-item"><span>Макс. уровень:</span> <span>${this.data.classic.maxLevel}</span></div>
+                    </div>
+                    <div class="stat-category">
+                        <h3>Лавина</h3>
+                        <div class="stat-item"><span>Рекорд:</span> <span>${this.data.avalanche.highScore}</span></div>
+                        <div class="stat-item"><span>Макс. линии:</span> <span>${this.data.avalanche.maxLines}</span></div>
+                    </div>
+                    <div class="stat-category">
+                        <h3>Подрывник</h3>
+                        <div class="stat-item"><span>Рекорд:</span> <span>${this.data.demolition.highScore}</span></div>
+                        <div class="stat-item"><span>Лучшее время (40 линий):</span> <span>${this.data.demolition.bestTime === Infinity ? 'N/A' : tetris.formatTime(this.data.demolition.bestTime)}</span></div>
+                    </div>`;
+                elements.statsModal.classList.add('visible');
+            }
+        };
+        
+        function resizeGame() {
+            const gameContainer = document.getElementById('game-container');
+            if (!gameContainer || !gameContainer.offsetParent) return;
+
+            const baseWidth = 420; 
+            const baseHeight = 650; 
+            
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+
+            let scale;
+
+            if (viewportWidth < 480 || viewportHeight < 700) {
+                 scale = Math.min(viewportWidth / 380, viewportHeight / 750);
+            } else {
+                 scale = Math.min(viewportWidth / baseWidth, viewportHeight / baseHeight);
+            }
+            
+            if (scale > 1.2) scale = 1.2;
+
+            gameContainer.style.transform = `scale(${scale})`;
         }
 
-        window.onload = () => {
-             YaGames.init().then(ysdk => {
-                console.log('Yandex SDK initialized');
-                window.ysdk = ysdk;
-                window.game = new Game(ysdk);
-            }).catch(console.error);
+        async function initApp() {
+            await initVK();
+            await stats.load();
+
+            elements.mainMenu.addEventListener('click', (e) => {
+                if (e.target.matches('.btn[data-mode]')) {
+                    elements.mainMenu.classList.remove('visible');
+                    elements.gameWrapper.classList.remove('hidden');
+                    tetris.init(e.target.dataset.mode);
+                    resizeGame();
+                }
+            });
+            elements.statsBtn.addEventListener('click', () => stats.display());
+            elements.rulesBtn.addEventListener('click', () => elements.rulesModal.classList.add('visible'));
+            elements.closeStatsBtn.addEventListener('click', () => elements.statsModal.classList.remove('visible'));
+            elements.closeRulesBtn.addEventListener('click', () => elements.rulesModal.classList.remove('visible'));
+            elements.pauseBtn.addEventListener('click', () => tetris.togglePause());
+            elements.resumeBtn.addEventListener('click', () => tetris.togglePause());
+            
+            const restart = () => {
+                elements.pauseMenu.classList.remove('visible');
+                elements.gameOverMenu.classList.remove('visible');
+                tetris.init(tetris.gameMode);
+            };
+            elements.restartBtn.addEventListener('click', restart);
+            elements.restartGameOverBtn.addEventListener('click', restart);
+
+            const toMainMenu = () => {
+                tetris.cleanup();
+                elements.pauseMenu.classList.remove('visible');
+                elements.gameOverMenu.classList.remove('visible');
+                elements.gameWrapper.classList.add('hidden');
+                elements.mainMenu.classList.add('visible');
+            };
+            elements.mainMenuBtn.addEventListener('click', toMainMenu);
+            elements.mainMenuGameOverBtn.addEventListener('click', toMainMenu);
+
+            window.addEventListener('resize', resizeGame);
+            resizeGame(); // Initial call
         }
+        initApp();
+    })();
     </script>
 </body>
 </html>
-
 
