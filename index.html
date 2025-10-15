@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Тетрис</title>
     <!-- VK Bridge -->
     <script src="https://unpkg.com/@vkontakte/vk-bridge/dist/browser.min.js"></script>
@@ -13,17 +13,17 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         /* ========================================
-        Новый Дизайн "Тетрис" v2
+        Новый Дизайн "Тетрис" v3 - FINAL
         ======================================== */
         :root {
-            --bg-gradient-start: #1a1c43;
-            --bg-gradient-mid: #43447a;
-            --bg-gradient-end: #2e2e54;
+            --bg-gradient-start: #1e1349;
+            --bg-gradient-mid: #3a2d78;
+            --bg-gradient-end: #23204b;
             --glass-bg: rgba(255, 255, 255, 0.08);
             --glass-border: rgba(255, 255, 255, 0.15);
             --text-primary: #f0f6fc;
             --text-secondary: #a1a9b4;
-            --text-accent: #6cb6ff;
+            --text-accent: #818cf8;
             --shadow-color: rgba(0, 0, 0, 0.5);
             --btn-bg-start: #6366f1;
             --btn-bg-end: #8b5cf6;
@@ -41,18 +41,22 @@
             -webkit-tap-highlight-color: transparent;
         }
 
+        html, body {
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+        }
+
         body {
             font-family: 'Poppins', sans-serif;
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 100vh;
             margin: 0;
             background: linear-gradient(45deg, var(--bg-gradient-start), var(--bg-gradient-mid), var(--bg-gradient-end));
             background-size: 200% 200%;
             animation: gradient-animation 20s ease infinite;
             color: var(--text-primary);
-            overflow: hidden;
             user-select: none;
             -webkit-user-select: none;
         }
@@ -72,31 +76,38 @@
             align-items: center;
             width: 100%;
             height: 100%;
-            padding: 10px;
+            padding: 15px;
+            padding-bottom: 70px; /* Защита от рекламного баннера VK */
         }
 
         #game-container {
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 20px;
+            gap: 25px;
             transition: transform 0.5s ease;
             transform-origin: center center;
             width: 100%;
-            max-width: 500px;
+            max-width: 480px;
         }
         
         #main-content {
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 15px;
+            gap: 20px;
         }
 
         #top-info-panel {
             display: flex;
             justify-content: space-between;
+            align-items: center;
             width: 100%;
+            gap: 10px;
+        }
+        
+        #top-info-panel .info-box {
+            flex: 1;
         }
 
         #canvas {
@@ -104,7 +115,7 @@
             height: 440px; /* 22 * 20px */
             background-color: rgba(0,0,0,0.3);
             position: relative;
-            border-radius: 10px;
+            border-radius: 12px;
             border: 1px solid var(--glass-border);
             background-image: 
                 linear-gradient(to right, var(--grid-color) 1px, transparent 1px),
@@ -131,19 +142,19 @@
             backdrop-filter: blur(5px);
             -webkit-backdrop-filter: blur(5px);
             border-radius: 12px;
-            padding: 10px 5px;
+            padding: 8px 5px;
             transition: background-color 0.2s;
         }
         .info-box p {
             margin: 0;
-            font-size: 11px;
+            font-size: 10px;
             color: var(--text-secondary);
             text-transform: uppercase;
             font-weight: 600;
         }
         .info-box span {
             display: block;
-            font-size: 20px;
+            font-size: 18px;
             color: var(--text-primary);
             margin-top: 4px;
             font-weight: 700;
@@ -152,7 +163,7 @@
         #next_shape {
             position: relative;
             width: 100%;
-            height: 80px;
+            height: 70px;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -242,12 +253,13 @@
 
         .modal-body {
             overflow-y: auto;
+            overflow-x: hidden;
             width: 100%;
-            padding-right: 10px; /* space for scrollbar */
+            padding: 0 5px;
         }
-        .modal-body::-webkit-scrollbar { width: 5px; }
+        .modal-body::-webkit-scrollbar { width: 4px; }
         .modal-body::-webkit-scrollbar-track { background: transparent; }
-        .modal-body::-webkit-scrollbar-thumb { background: var(--text-accent); border-radius: 5px; }
+        .modal-body::-webkit-scrollbar-thumb { background: var(--text-accent); border-radius: 4px; }
 
         .btn {
             background: linear-gradient(45deg, var(--btn-bg-start), var(--btn-bg-end));
@@ -277,17 +289,8 @@
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
         }
 
-        .main-menu-buttons {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 15px;
-        }
-        .main-menu-footer {
-            display: flex;
-            gap: 15px;
-            margin-top: 20px;
-        }
+        .main-menu-buttons { display: flex; flex-direction: column; align-items: center; gap: 15px; }
+        .main-menu-footer { display: flex; gap: 15px; margin-top: 20px; }
         .circle-btn {
             width: 50px; height: 50px;
             border-radius: 50%;
@@ -296,15 +299,12 @@
             display: flex; justify-content: center; align-items: center;
             cursor: pointer;
             transition: all 0.2s ease;
+            flex-shrink: 0;
         }
         .circle-btn:hover { background: rgba(255,255,255,0.15); transform: scale(1.1); }
         .circle-btn svg { width: 24px; height: 24px; fill: var(--text-primary); }
 
-        .settings-item {
-            display: flex; justify-content: space-between; align-items: center;
-            width: 100%; padding: 10px 0;
-            font-size: 16px;
-        }
+        .settings-item { display: flex; justify-content: space-between; align-items: center; width: 100%; padding: 10px 0; font-size: 16px; }
         .toggle-switch { position: relative; display: inline-block; width: 50px; height: 26px; }
         .toggle-switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--control-bg); transition: .4s; border-radius: 26px; }
@@ -312,10 +312,8 @@
         input:checked + .slider { background-color: var(--btn-bg-start); }
         input:checked + .slider:before { transform: translateX(24px); }
 
-
         .rules-content h3 { color: var(--text-accent); font-size: 15px; margin: 15px 0 5px 0; font-weight: 600; }
         .rules-content p { color: var(--text-secondary); }
-
         .stat-category { margin-bottom: 20px; }
         .stat-category h3 { color: var(--text-accent); font-size: 16px; margin: 0 0 10px 0; text-align: center; font-weight: 600; }
         .stat-item { display: flex; justify-content: space-between; margin: 8px 0; background: rgba(0,0,0,0.15); padding: 8px 12px; border-radius: 8px; }
@@ -324,12 +322,7 @@
         /* ========================================
         Мобильное Управление
         ======================================== */
-        #mobile-controls {
-            display: grid;
-            grid-template-areas: ". up ." "left down right";
-            gap: 10px;
-            width: 220px;
-        }
+        #mobile-controls { display: grid; grid-template-areas: ". up ." "left down right"; gap: 10px; width: 220px; }
         .control-btn {
             width: 65px; height: 65px;
             font-size: 30px;
@@ -349,7 +342,7 @@
         
         .hidden { display: none !important; }
 
-        @media (max-height: 720px) {
+        @media (max-height: 740px) {
             #game-container { flex-direction: column; }
             #side-info-panel {
                 order: 3;
@@ -359,7 +352,6 @@
                 justify-content: center;
             }
             .info-box { flex: 1; }
-            #pause-btn { width: 100%; }
         }
 
     </style>
@@ -377,81 +369,29 @@
                 <button class="btn" data-mode="demolition">Подрывник</button>
             </div>
             <div class="main-menu-footer">
-                <button id="rules-btn" class="circle-btn" aria-label="Правила">
-                    <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"></path></svg>
-                </button>
-                <button id="stats-btn" class="circle-btn" aria-label="Статистика">
-                     <svg viewBox="0 0 24 24"><path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6h-6z"></path></svg>
-                </button>
-                <button id="settings-btn" class="circle-btn" aria-label="Настройки">
-                    <svg viewBox="0 0 24 24"><path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"></path></svg>
-                </button>
+                <button id="rules-btn" class="circle-btn" aria-label="Правила"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"></path></svg></button>
+                <button id="stats-btn" class="circle-btn" aria-label="Статистика"><svg viewBox="0 0 24 24"><path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6h-6z"></path></svg></button>
+                <button id="settings-btn" class="circle-btn" aria-label="Настройки"><svg viewBox="0 0 24 24"><path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69-.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"></path></svg></button>
             </div>
         </div>
     </div>
     
-    <div id="settings-modal" class="modal-overlay">
-        <div class="modal-content">
-            <h1>Настройки</h1>
-            <div class="modal-body">
-                <div class="settings-item">
-                    <span>Звуки</span>
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="sound-toggle">
-                        <span class="slider"></span>
-                    </label>
-                </div>
-            </div>
-             <button id="close-settings-btn" class="btn">Закрыть</button>
-        </div>
-    </div>
-
-    <div id="rules-modal" class="modal-overlay">
-        <div class="modal-content">
-            <h1>Правила</h1>
-            <div class="modal-body rules-content">
-                <h3>Классика</h3>
-                <p>Собирайте линии, чтобы набрать очки. Каждые 10 линий увеличивают уровень и скорость игры.</p>
-                <h3>Лавина</h3>
-                <p>Каждые несколько секунд снизу поднимается новый ряд блоков. Успевайте их разбирать, пока поле не заполнилось!</p>
-                <h3>Подрывник</h3>
-                <p>Среди фигур иногда попадаются бомбы. Установите бомбу, чтобы взорвать блоки в радиусе 3x3. Идеально для выхода из сложных ситуаций.</p>
-            </div>
-            <button id="close-rules-btn" class="btn">Понятно</button>
-        </div>
-    </div>
-
-    <div id="game-over-menu" class="modal-overlay">
-        <div class="modal-content">
-            <h1 id="game-over-title">Конец Игры</h1>
-            <button id="restart-gameover-btn" class="btn">Заново</button>
-            <button id="main-menu-gameover-btn" class="btn">В меню</button>
-        </div>
-    </div>
-
-    <div id="pause-menu" class="modal-overlay">
-        <div class="modal-content">
-            <h1>Пауза</h1>
-            <button id="resume-btn" class="btn">Продолжить</button>
-            <button id="restart-btn" class="btn">Заново</button>
-            <button id="main-menu-btn" class="btn">В меню</button>
-        </div>
-    </div>
-
-    <div id="stats-modal" class="modal-overlay">
-        <div class="modal-content">
-            <h1>Статистика</h1>
-            <div id="stats-grid" class="modal-body stats-content"></div>
-            <button id="close-stats-btn" class="btn">Закрыть</button>
-        </div>
-    </div>
+    <div id="settings-modal" class="modal-overlay"><div class="modal-content"><h1>Настройки</h1><div class="modal-body"><div class="settings-item"><span>Звуки</span><label class="toggle-switch"><input type="checkbox" id="sound-toggle"><span class="slider"></span></label></div></div><button id="close-settings-btn" class="btn">Закрыть</button></div></div>
+    <div id="rules-modal" class="modal-overlay"><div class="modal-content"><h1>Правила</h1><div class="modal-body rules-content"><h3>Классика</h3><p>Собирайте линии, чтобы набрать очки. Каждые 10 линий увеличивают уровень и скорость игры.</p><h3>Лавина</h3><p>Каждые несколько секунд снизу поднимается новый ряд блоков. Успевайте их разбирать, пока поле не заполнилось!</p><h3>Подрывник</h3><p>Среди фигур иногда попадаются бомбы. Установите бомбу, чтобы взорвать блоки в радиусе 3x3. Идеально для выхода из сложных ситуаций.</p></div><button id="close-rules-btn" class="btn">Понятно</button></div></div>
+    <div id="game-over-menu" class="modal-overlay"><div class="modal-content"><h1 id="game-over-title">Конец Игры</h1><button id="restart-gameover-btn" class="btn">Заново</button><button id="main-menu-gameover-btn" class="btn">В меню</button></div></div>
+    <div id="pause-menu" class="modal-overlay"><div class="modal-content"><h1>Пауза</h1><button id="resume-btn" class="btn">Продолжить</button><button id="restart-btn" class="btn">Заново</button><button id="main-menu-btn" class="btn">В меню</button></div></div>
+    <div id="stats-modal" class="modal-overlay"><div class="modal-content"><h1>Статистика</h1><div id="stats-grid" class="modal-body stats-content"></div><button id="close-stats-btn" class="btn">Закрыть</button></div></div>
 
     <div id="game-wrapper" class="hidden">
         <div id="game-container">
             <div id="main-content">
                  <div id="top-info-panel">
-                    <div class="info-box" style="min-width: 80px;"><p>Счет</p><span id="score-val">0</span></div>
-                    <div class="info-box" style="min-width: 80px;"><p>Линии</p><span id="lines-val">0</span></div>
+                    <div class="info-box"><p>Счет</p><span id="score-val">0</span></div>
+                    <button id="pause-btn" class="circle-btn" aria-label="Пауза">
+                        <svg id="pause-icon" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path></svg>
+                        <svg id="resume-icon" viewBox="0 0 24 24" class="hidden"><path d="M8 5v14l11-7z"></path></svg>
+                    </button>
+                    <div class="info-box"><p>Линии</p><span id="lines-val">0</span></div>
                 </div>
                 <div id="canvas"></div>
                 <div id="mobile-controls">
@@ -465,7 +405,6 @@
                 <div class="info-box"><p>Уровень</p><span id="level-val">1</span></div>
                 <div class="info-box"><p>Время</p><span id="time-val">00:00</span></div>
                 <div class="info-box"><p>Далее</p><div id="next_shape"></div></div>
-                <button id="pause-btn" class="btn" style="width: 100%; font-size: 12px; padding: 12px;">Пауза</button>
             </div>
         </div>
     </div>
@@ -490,6 +429,8 @@
             restartBtn: document.getElementById('restart-btn'),
             mainMenuBtn: document.getElementById('main-menu-btn'),
             pauseBtn: document.getElementById('pause-btn'),
+            pauseIcon: document.getElementById('pause-icon'),
+            resumeIcon: document.getElementById('resume-icon'),
             restartGameOverBtn: document.getElementById('restart-gameover-btn'),
             mainMenuGameOverBtn: document.getElementById('main-menu-gameover-btn'),
             gameOverTitle: document.getElementById('game-over-title'),
@@ -513,28 +454,37 @@
                 this.synths.rotate = new Tone.Synth({ oscillator: { type: 'triangle' }, envelope: { attack: 0.005, decay: 0.1, sustain: 0, release: 0.1 } }).toDestination();
                 this.synths.gameOver = new Tone.Synth({ oscillator: { type: 'sawtooth' }, envelope: { attack: 0.01, decay: 0.5, sustain: 0.1, release: 0.5 } }).toDestination();
                 this.synths.bomb = new Tone.NoiseSynth({ noise: { type: 'white' }, envelope: { attack: 0.005, decay: 0.3, sustain: 0 } }).toDestination();
+                this.synths.pause = new Tone.Synth({ oscillator: { type: 'sine' }, envelope: { attack: 0.01, decay: 0.1, sustain: 0.1, release: 0.1 } }).toDestination();
                 
                 const savedMute = localStorage.getItem('tetrisMuted');
                 this.isMuted = savedMute !== 'false';
                 elements.soundToggle.checked = !this.isMuted;
                 elements.soundToggle.addEventListener('change', () => this.toggleMute());
             },
-            play: function(sound) {
-                if (this.isMuted) return;
+            play: function(sound, note = "C4") {
+                if (this.isMuted || !Tone.context.state || Tone.context.state !== 'running') return;
                 try {
-                    Tone.start();
                     switch(sound) {
                         case 'drop': this.synths.drop.triggerAttackRelease("C2", "8n"); break;
                         case 'clear': this.synths.clear.triggerAttackRelease(["C4", "E4", "G4", "C5"], "8n"); break;
                         case 'rotate': this.synths.rotate.triggerAttackRelease("C5", "16n"); break;
                         case 'gameOver': this.synths.gameOver.triggerAttackRelease("C3", "4n"); break;
                         case 'bomb': this.synths.bomb.triggerAttackRelease("2n"); break;
+                        case 'pause': this.synths.pause.triggerAttackRelease(note, "8n"); break;
                     }
                 } catch (e) { console.error("Sound play error:", e); }
             },
             toggleMute: function() {
                 this.isMuted = !elements.soundToggle.checked;
                 localStorage.setItem('tetrisMuted', this.isMuted);
+                if (!this.isMuted) {
+                    this.startContext();
+                }
+            },
+            startContext: function() {
+                if (Tone.context.state !== 'running') {
+                    Tone.start();
+                }
             }
         };
 
@@ -578,16 +528,14 @@
                 this.play();
                 if (this.gameMode === 'avalanche') this.scheduleAvalanche();
             },
-            cleanup: function() {
-                this.clearTimers(); this.unbindEvents(); elements.canvas.innerHTML = '';
-            },
+            cleanup: function() { this.clearTimers(); this.unbindEvents(); elements.canvas.innerHTML = ''; },
             resetState: function() {
                 Object.assign(this, {
-                    board: [], sqs: [], curSqs: [], tempShapes: null,
+                    board: [], sqs: [], curSqs: [], ghostSqs: [], tempShapes: null,
                     score: 0, level: 1, lines: 0, time: 0, speed: 700,
                     maxLinesClearedInTurn: 0, isActive: true, isPaused: false, isGameOver: false
                 });
-                elements.displays.level.parentElement.style.display = this.gameMode === 'demolition' ? 'none' : 'block';
+                elements.displays.level.parentElement.style.display = 'block';
             },
             initBoard: function () { this.board = Array(this.boardHeight).fill(0).map(() => Array(this.boardWidth).fill(null)); },
             updateInfo: function() {
@@ -627,27 +575,22 @@
                      this.tempShapes.push(...tempSet);
                 }
                 if (this.gameMode === 'demolition' && Math.random() < 0.25) {
-                    this.tempShapes.splice(1, 0, 7);
+                    this.tempShapes.splice(Math.floor(Math.random() * 5) + 1, 0, 7);
                 }
             },
             drawNextShape: function () {
                 elements.nextShapeDisplay.innerHTML = "";
                 const shape = this.shapes[this.nextShapeIndex];
-                const bounds = shape.reduce((b, [x,y]) => ({
-                    minX: Math.min(b.minX, x), maxX: Math.max(b.maxX, x),
-                    minY: Math.min(b.minY, y), maxY: Math.max(b.maxY, y)
-                }), {minX:0,maxX:0,minY:0,maxY:0});
+                const bounds = shape.reduce((b, [x,y]) => ({ minX: Math.min(b.minX, x), maxX: Math.max(b.maxX, x), minY: Math.min(b.minY, y), maxY: Math.max(b.maxY, y) }), {minX:0,maxX:0,minY:0,maxY:0});
                 const w = (bounds.maxX - bounds.minX + 1) * this.pSize;
                 const h = (bounds.maxY - bounds.minY + 1) * this.pSize;
                 const offsetX = (elements.nextShapeDisplay.clientWidth - w) / 2; 
                 const offsetY = (elements.nextShapeDisplay.clientHeight - h) / 2;
-                shape.forEach(([x,y]) => elements.nextShapeDisplay.appendChild(this.createSquare(
-                    (x-bounds.minX)*this.pSize + offsetX, (y-bounds.minY)*this.pSize + offsetY, this.nextShapeIndex)));
+                shape.forEach(([x,y]) => elements.nextShapeDisplay.appendChild(this.createSquare((x-bounds.minX)*this.pSize + offsetX, (y-bounds.minY)*this.pSize + offsetY, this.nextShapeIndex)));
             },
             drawShape: function () {
                 this.removeSqs(this.curSqs); this.curSqs = [];
-                this.curShape.forEach(([px,py]) => this.curSqs.push(this.createSquare(
-                    (px+this.curX)*this.pSize, (py+this.curY)*this.pSize, this.curShapeIndex)));
+                this.curShape.forEach(([px,py]) => this.curSqs.push(this.createSquare((px+this.curX)*this.pSize, (py+this.curY)*this.pSize, this.curShapeIndex)));
                 this.curSqs.forEach(sq => elements.canvas.appendChild(sq));
                 
                 this.removeSqs(this.ghostSqs); this.ghostSqs = [];
@@ -662,8 +605,7 @@
                 });
                 this.ghostSqs.forEach(sq => elements.canvas.appendChild(sq));
             },
-            createSquare: (x,y,type) => Object.assign(document.createElement("div"), {
-                className: `square type${type}`, style: `left:${x}px; top:${y}px;` }),
+            createSquare: (x,y,type) => Object.assign(document.createElement("div"), { className: `square type${type}`, style: `left:${x}px; top:${y}px;` }),
             removeSqs: (sqsArr) => sqsArr.forEach(sq => sq.remove()),
             setCurCoords: function (x,y) { this.curX=x; this.curY=y; },
             eventHandlers: {},
@@ -674,7 +616,7 @@
                 this.eventHandlers.mobile = [];
                 for (const [id, move] of Object.entries(controls)) {
                     const btn=document.getElementById(id); let int;
-                    const start=e=>{e.preventDefault(); if(int||this.isPaused||this.isGameOver)return; this.move(move); int=setInterval(()=>this.move(move),120)};
+                    const start=e=>{e.preventDefault(); soundManager.startContext(); if(int||this.isPaused||this.isGameOver)return; this.move(move); int=setInterval(()=>this.move(move),120)};
                     const end=()=>{clearInterval(int); int=null};
                     btn.addEventListener('mousedown',start); btn.addEventListener('touchstart',start,{passive:false});
                     btn.addEventListener('mouseup',end); btn.addEventListener('mouseleave',end); btn.addEventListener('touchend',end);
@@ -682,8 +624,8 @@
                 }
             },
             unbindEvents: function() {
-                document.removeEventListener('keydown', this.eventHandlers.keyDown);
-                this.eventHandlers.mobile.forEach(({btn,start,end})=>{
+                if (this.eventHandlers.keyDown) document.removeEventListener('keydown', this.eventHandlers.keyDown);
+                if (this.eventHandlers.mobile) this.eventHandlers.mobile.forEach(({btn,start,end})=>{
                     btn.removeEventListener('mousedown',start); btn.removeEventListener('touchstart',start);
                     btn.removeEventListener('mouseup',end); btn.removeEventListener('mouseleave',end); btn.removeEventListener('touchend',end);
                 });
@@ -691,6 +633,7 @@
             },
             handleKey: function (e) {
                 if (!this.isActive || this.isGameOver) return;
+                soundManager.startContext();
                 if (e.key === "Escape" || e.key.toLowerCase() === "p") { e.preventDefault(); this.togglePause(); return; }
                 if(this.isPaused) return;
                 const keyMap = { ArrowLeft:'L', a:'L', ArrowRight:'R', d:'R', ArrowDown:'D', s:'D', ArrowUp:'RT', w:'RT' };
@@ -713,9 +656,17 @@
                 if (this.isGameOver) return;
                 this.isPaused = !this.isPaused;
                 if (this.isPaused) {
-                    this.clearTimers(); elements.pauseMenu.classList.add('visible');
+                    this.clearTimers(); 
+                    elements.pauseMenu.classList.add('visible');
+                    elements.pauseIcon.classList.add('hidden');
+                    elements.resumeIcon.classList.remove('hidden');
+                    soundManager.play('pause', 'C4');
                 } else {
-                    elements.pauseMenu.classList.remove('visible'); this.play();
+                    elements.pauseMenu.classList.remove('visible'); 
+                    elements.pauseIcon.classList.remove('hidden');
+                    elements.resumeIcon.classList.add('hidden');
+                    soundManager.play('pause', 'G4');
+                    this.play();
                 }
             },
             startGameLoop: function() { this.gameLoopTimeout = setTimeout(() => this.gameLoop(), this.speed); },
@@ -729,7 +680,7 @@
                 if (this.checkMove(this.curX, this.curY + 1, this.curShape)) {
                     this.curY++; this.drawShape();
                 } else {
-                    if (this.curY < 0) { this.gameOver(); return; }
+                    if (this.curY < 1) { this.gameOver(); return; }
                     if (this.gameMode === 'demolition' && this.curShapeIndex === 7) {
                         this.detonateBomb(this.curX, this.curY); return;
                     }
@@ -740,7 +691,7 @@
                         if(!this.isGameOver) this.initShapes();
                     }
                 }
-                if (!this.isGameOver) this.startGameLoop();
+                if (!this.isGameOver && this.isActive) this.startGameLoop();
             },
             move: function (dir) {
                 if (this.isPaused || this.isGameOver) return;
@@ -755,7 +706,7 @@
                 }
             },
             rotate: function () {
-                if (this.curShapeIndex >= 5) return; // O-shape and Bomb don't rotate
+                if (this.curShapeIndex >= 5) return;
                 const tempShape = this.curShape.map(([x,y]) => [-y,x]);
                 for (const kick of [0,1,-1,2,-2]) {
                     if (this.checkMove(this.curX + kick, this.curY, tempShape)) {
@@ -775,19 +726,18 @@
             },
             animateAndRemoveRows: function(rows) {
                 this.maxLinesClearedInTurn = Math.max(this.maxLinesClearedInTurn, rows.length);
-                this.sqs.forEach(sq => {
-                    const [,sqY] = this.getPos(sq);
-                    if (rows.includes(sqY)) sq.classList.add('line-clear');
-                });
+                this.sqs.forEach(sq => { const [,sqY] = this.getPos(sq); if (rows.includes(sqY)) sq.classList.add('line-clear'); });
                 setTimeout(() => {
-                    this.removeRows(rows);
-                    this.calcScore({ lines: rows.length }); this.checkLevelUp();
+                    this.removeRows(rows); this.calcScore({ lines: rows.length }); this.checkLevelUp();
                     if (!this.isGameOver) { this.initShapes(); this.startGameLoop(); }
                 }, 300);
                 soundManager.play('clear');
             },
             removeRows: function(rows) {
-                rows.forEach(() => {this.board.pop(); this.board.unshift(Array(this.boardWidth).fill(null))});
+                rows.sort((a,b)=>a-b).reverse().forEach(y => {
+                    this.board.splice(y, 1);
+                    this.board.unshift(Array(this.boardWidth).fill(null));
+                });
                 this.redrawAllBlocks();
             },
             redrawAllBlocks: function() {
@@ -830,8 +780,7 @@
                 this.redrawAllBlocks(); this.scheduleAvalanche();
             },
             detonateBomb: function(x,y) {
-                this.removeSqs(this.curSqs); let clearedCount = 0;
-                const blastCoords = [];
+                this.removeSqs(this.curSqs); let clearedCount = 0; const blastCoords = [];
                 for(let i = -1; i <= 1; i++) for(let j = -1; j <= 1; j++) {
                     const cX=x+j, cY=y+i;
                     if(cY>=0&&cY<this.boardHeight&&cX>=0&&cX<this.boardWidth){
@@ -839,10 +788,7 @@
                         if(this.board[cY][cX] !== null) { this.board[cY][cX] = null; clearedCount++; }
                     }
                 }
-                this.sqs.forEach(sq => {
-                    const [sqX, sqY] = this.getPos(sq);
-                    if (blastCoords.some(c => c.x === sqX && c.y === sqY)) sq.classList.add('bomb-clear');
-                });
+                this.sqs.forEach(sq => { const [sqX, sqY] = this.getPos(sq); if (blastCoords.some(c => c.x === sqX && c.y === sqY)) sq.classList.add('bomb-clear'); });
                 soundManager.play('bomb');
                 setTimeout(() => {
                     this.redrawAllBlocks(); this.calcScore({ bombClear: clearedCount });
@@ -864,7 +810,6 @@
                 if (mode === 'classic') { this.data[mode].highScore=Math.max(this.data[mode].highScore,score); this.data[mode].maxLevel=Math.max(this.data[mode].maxLevel,level); }
                 else if (mode === 'avalanche') { this.data[mode].highScore=Math.max(this.data[mode].highScore,score); this.data[mode].maxLines=Math.max(this.data[mode].maxLines,lines); }
                 else if (mode === 'demolition') { this.data[mode].highScore=Math.max(this.data[mode].highScore,score); if(lines>=40) this.data[mode].bestTime=Math.min(this.data[mode].bestTime,time); }
-                
                 const dataString = JSON.stringify(this.data);
                 localStorage.setItem(STATS_VK_KEY, dataString);
                 if (isVK) vkBridge.send('VKWebAppStorageSet', { key: STATS_VK_KEY, value: dataString }).catch(e=>{});
@@ -874,16 +819,15 @@
                     <div class="stat-category"><h3>Классика</h3><div class="stat-item"><span>Рекорд:</span> <span>${this.data.classic.highScore}</span></div><div class="stat-item"><span>Макс. уровень:</span> <span>${this.data.classic.maxLevel}</span></div></div>
                     <div class="stat-category"><h3>Лавина</h3><div class="stat-item"><span>Рекорд:</span> <span>${this.data.avalanche.highScore}</span></div><div class="stat-item"><span>Макс. линии:</span> <span>${this.data.avalanche.maxLines}</span></div></div>
                     <div class="stat-category"><h3>Подрывник</h3><div class="stat-item"><span>Рекорд:</span> <span>${this.data.demolition.highScore}</span></div><div class="stat-item"><span>Лучшее время (40 линий):</span> <span>${this.data.demolition.bestTime === Infinity ? 'N/A' : tetris.formatTime(this.data.demolition.bestTime)}</span></div></div>`;
-                elements.statsModal.classList.add('visible');
             }
         };
         
         function resizeGame() {
             const gameContainer = document.getElementById('game-container');
             if (!gameContainer || !gameContainer.offsetParent) return;
-            const baseWidth = (window.innerHeight <= 720) ? 400 : 500;
-            const baseHeight = 700;
-            const scale = Math.min(window.innerWidth/baseWidth, window.innerHeight/baseHeight, 1.2);
+            const baseWidth = (window.innerHeight <= 740) ? 400 : 480;
+            const baseHeight = 720;
+            const scale = Math.min(window.innerWidth/baseWidth, window.innerHeight/baseHeight, 1.1);
             gameContainer.style.transform = `scale(${scale})`;
         }
 
@@ -895,6 +839,7 @@
             elements.mainMenu.addEventListener('click', (e) => {
                 const btn = e.target.closest('.btn[data-mode]');
                 if (btn) {
+                    soundManager.startContext();
                     elements.mainMenu.classList.remove('visible');
                     elements.gameWrapper.classList.remove('hidden');
                     tetris.init(btn.dataset.mode); resizeGame();
