@@ -13,7 +13,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         /* ========================================
-        Новый Дизайн "Тетрис" v3 - FINAL
+        Новый Дизайн "Тетрис" v4 - FINAL
         ======================================== */
         :root {
             --bg-gradient-start: #1e1349;
@@ -77,14 +77,15 @@
             width: 100%;
             height: 100%;
             padding: 15px;
-            padding-bottom: 70px; /* Защита от рекламного баннера VK */
+            /* Защита от рекламного баннера VK с использованием env() для iOS */
+            padding-bottom: calc(70px + env(safe-area-inset-bottom));
         }
 
         #game-container {
             display: flex;
-            align-items: center;
+            align-items: flex-start; /* Changed */
             justify-content: center;
-            gap: 25px;
+            gap: 20px;
             transition: transform 0.5s ease;
             transform-origin: center center;
             width: 100%;
@@ -101,7 +102,6 @@
         #top-info-panel {
             display: flex;
             justify-content: space-between;
-            align-items: center;
             width: 100%;
             gap: 10px;
         }
@@ -256,11 +256,11 @@
             overflow-x: hidden;
             width: 100%;
             padding: 0 5px;
+            max-height: 50vh; /* Ограничение высоты */
         }
-        .modal-body::-webkit-scrollbar { width: 4px; }
-        .modal-body::-webkit-scrollbar-track { background: transparent; }
-        .modal-body::-webkit-scrollbar-thumb { background: var(--text-accent); border-radius: 4px; }
-
+        /* Стилизация скроллбара, которая не будет видна, если контент помещается */
+        .modal-body::-webkit-scrollbar { width: 0px; background: transparent; }
+        
         .btn {
             background: linear-gradient(45deg, var(--btn-bg-start), var(--btn-bg-end));
             color: var(--btn-text);
@@ -313,7 +313,7 @@
         input:checked + .slider:before { transform: translateX(24px); }
 
         .rules-content h3 { color: var(--text-accent); font-size: 15px; margin: 15px 0 5px 0; font-weight: 600; }
-        .rules-content p { color: var(--text-secondary); }
+        .rules-content p { color: var(--text-secondary); margin-bottom: 10px;}
         .stat-category { margin-bottom: 20px; }
         .stat-category h3 { color: var(--text-accent); font-size: 16px; margin: 0 0 10px 0; text-align: center; font-weight: 600; }
         .stat-item { display: flex; justify-content: space-between; margin: 8px 0; background: rgba(0,0,0,0.15); padding: 8px 12px; border-radius: 8px; }
@@ -341,19 +341,7 @@
         #right-btn { grid-area: right; }
         
         .hidden { display: none !important; }
-
-        @media (max-height: 740px) {
-            #game-container { flex-direction: column; }
-            #side-info-panel {
-                order: 3;
-                flex-direction: row;
-                width: 100%;
-                max-width: 380px;
-                justify-content: center;
-            }
-            .info-box { flex: 1; }
-        }
-
+        
     </style>
 </head>
 <body oncontextmenu="return false;">
@@ -387,10 +375,6 @@
             <div id="main-content">
                  <div id="top-info-panel">
                     <div class="info-box"><p>Счет</p><span id="score-val">0</span></div>
-                    <button id="pause-btn" class="circle-btn" aria-label="Пауза">
-                        <svg id="pause-icon" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path></svg>
-                        <svg id="resume-icon" viewBox="0 0 24 24" class="hidden"><path d="M8 5v14l11-7z"></path></svg>
-                    </button>
                     <div class="info-box"><p>Линии</p><span id="lines-val">0</span></div>
                 </div>
                 <div id="canvas"></div>
@@ -405,6 +389,7 @@
                 <div class="info-box"><p>Уровень</p><span id="level-val">1</span></div>
                 <div class="info-box"><p>Время</p><span id="time-val">00:00</span></div>
                 <div class="info-box"><p>Далее</p><div id="next_shape"></div></div>
+                <button id="pause-btn" class="btn" style="width: 100%; font-size: 12px; padding: 12px;">Пауза</button>
             </div>
         </div>
     </div>
@@ -429,8 +414,6 @@
             restartBtn: document.getElementById('restart-btn'),
             mainMenuBtn: document.getElementById('main-menu-btn'),
             pauseBtn: document.getElementById('pause-btn'),
-            pauseIcon: document.getElementById('pause-icon'),
-            resumeIcon: document.getElementById('resume-icon'),
             restartGameOverBtn: document.getElementById('restart-gameover-btn'),
             mainMenuGameOverBtn: document.getElementById('main-menu-gameover-btn'),
             gameOverTitle: document.getElementById('game-over-title'),
@@ -449,12 +432,14 @@
             isMuted: true,
             synths: {},
             init: function() {
-                this.synths.drop = new Tone.MembraneSynth({ pitchDecay: 0.01, octaves: 6, oscillator: { type: "sine" }, envelope: { attack: 0.001, decay: 0.2, sustain: 0.01, release: 0.1 } }).toDestination();
-                this.synths.clear = new Tone.PolySynth(Tone.Synth, { oscillator: { type: "fmsine" }, envelope: { attack: 0.01, decay: 0.2, sustain: 0.1, release: 0.2 } }).toDestination();
-                this.synths.rotate = new Tone.Synth({ oscillator: { type: 'triangle' }, envelope: { attack: 0.005, decay: 0.1, sustain: 0, release: 0.1 } }).toDestination();
-                this.synths.gameOver = new Tone.Synth({ oscillator: { type: 'sawtooth' }, envelope: { attack: 0.01, decay: 0.5, sustain: 0.1, release: 0.5 } }).toDestination();
-                this.synths.bomb = new Tone.NoiseSynth({ noise: { type: 'white' }, envelope: { attack: 0.005, decay: 0.3, sustain: 0 } }).toDestination();
-                this.synths.pause = new Tone.Synth({ oscillator: { type: 'sine' }, envelope: { attack: 0.01, decay: 0.1, sustain: 0.1, release: 0.1 } }).toDestination();
+                this.synths.move = new Tone.Synth({ oscillator: { type: "square", volume: -20 }, envelope: { attack: 0.001, decay: 0.05, sustain: 0, release: 0.1 } }).toDestination();
+                this.synths.drop = new Tone.MembraneSynth({ pitchDecay: 0.01, octaves: 6, oscillator: { type: "sine", volume: -10 }, envelope: { attack: 0.001, decay: 0.2, sustain: 0.01, release: 0.1 } }).toDestination();
+                this.synths.clear = new Tone.PolySynth(Tone.Synth, { oscillator: { type: "fmsine", volume: -8 }, envelope: { attack: 0.01, decay: 0.2, sustain: 0.1, release: 0.2 } }).toDestination();
+                this.synths.rotate = new Tone.Synth({ oscillator: { type: 'triangle', volume: -15 }, envelope: { attack: 0.005, decay: 0.1, sustain: 0, release: 0.1 } }).toDestination();
+                this.synths.gameOver = new Tone.Synth({ oscillator: { type: 'sawtooth', volume: -8 }, envelope: { attack: 0.01, decay: 0.5, sustain: 0.1, release: 0.5 } }).toDestination();
+                this.synths.bomb = new Tone.NoiseSynth({ noise: { type: 'white', volume: -5 }, envelope: { attack: 0.005, decay: 0.3, sustain: 0 } }).toDestination();
+                this.synths.pause = new Tone.Synth({ oscillator: { type: 'sine', volume: -12 }, envelope: { attack: 0.01, decay: 0.1, sustain: 0.1, release: 0.1 } }).toDestination();
+                this.synths.click = new Tone.Synth({ oscillator: { type: "sine", volume: -15 }, envelope: { attack: 0.001, decay: 0.1, sustain: 0, release: 0.1 } }).toDestination();
                 
                 const savedMute = localStorage.getItem('tetrisMuted');
                 this.isMuted = savedMute !== 'false';
@@ -471,25 +456,21 @@
                         case 'gameOver': this.synths.gameOver.triggerAttackRelease("C3", "4n"); break;
                         case 'bomb': this.synths.bomb.triggerAttackRelease("2n"); break;
                         case 'pause': this.synths.pause.triggerAttackRelease(note, "8n"); break;
+                        case 'move': this.synths.move.triggerAttackRelease("G2", "32n"); break;
+                        case 'click': this.synths.click.triggerAttackRelease("C5", "16n"); break;
                     }
-                } catch (e) { console.error("Sound play error:", e); }
+                } catch (e) { /* silent fail */ }
             },
             toggleMute: function() {
                 this.isMuted = !elements.soundToggle.checked;
                 localStorage.setItem('tetrisMuted', this.isMuted);
-                if (!this.isMuted) {
-                    this.startContext();
-                }
+                if (!this.isMuted) this.startContext();
             },
-            startContext: function() {
-                if (Tone.context.state !== 'running') {
-                    Tone.start();
-                }
-            }
+            startContext: function() { if (Tone.context.state !== 'running') Tone.start(); }
         };
 
         let isVK = false;
-        const STATS_VK_KEY = 'tetrisGameStats_v3';
+        const STATS_VK_KEY = 'tetrisGameStats_v4';
 
         async function initVK() {
             try {
@@ -502,7 +483,7 @@
             board: [], sqs: [], curSqs: [], ghostSqs: [],
             tempShapes: null, curShape: null, curShapeIndex: null,
             curX: 0, curY: 0, score: 0, level: 1, lines: 0, time: 0, speed: 700,
-            gameMode: 'classic', maxLinesClearedInTurn: 0,
+            gameMode: 'classic',
             isActive: false, isPaused: false, isGameOver: false,
             gameLoopTimeout: null, timeCounterInterval: null, avalancheTimeout: null,
             pSize: 20, boardHeight: 22, boardWidth: 12, spawnX: 5, spawnY: 0,
@@ -516,7 +497,8 @@
                 [[0,0],[-1,0],[1,0],[2,0]], // 6: I Teal
                 [[0,0]]                     // 7: BOMB
             ],
-            
+            levelSpeeds: [800, 717, 633, 550, 467, 383, 300, 217, 133, 100, 83, 83, 83, 67, 67, 67, 50, 50, 50, 33, 33],
+
             init: function (mode) {
                 this.gameMode = mode;
                 this.cleanup();
@@ -532,9 +514,10 @@
             resetState: function() {
                 Object.assign(this, {
                     board: [], sqs: [], curSqs: [], ghostSqs: [], tempShapes: null,
-                    score: 0, level: 1, lines: 0, time: 0, speed: 700,
-                    maxLinesClearedInTurn: 0, isActive: true, isPaused: false, isGameOver: false
+                    score: 0, level: 1, lines: 0, time: 0,
+                    isActive: true, isPaused: false, isGameOver: false
                 });
+                this.speed = this.levelSpeeds[0];
                 elements.displays.level.parentElement.style.display = 'block';
             },
             initBoard: function () { this.board = Array(this.boardHeight).fill(0).map(() => Array(this.boardWidth).fill(null)); },
@@ -546,10 +529,9 @@
             },
             formatTime: (s) => `${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`,
             initShapes: function () {
-                if (!this.tempShapes || this.tempShapes.length <= 1) this.initTempShapes();
-                else this.tempShapes.shift();
+                if (!this.tempShapes || this.tempShapes.length === 0) this.initTempShapes();
                 
-                this.curShapeIndex = this.tempShapes[0];
+                this.curShapeIndex = this.tempShapes.shift();
                 this.curShape = JSON.parse(JSON.stringify(this.shapes[this.curShapeIndex]));
                 this.initNextShape();
                 let minY = this.curShape.reduce((min, [,y]) => Math.min(min, y), 0);
@@ -559,23 +541,21 @@
                 else this.gameOver();
             },
             initNextShape: function () {
-                if (this.tempShapes.length <=1) this.initTempShapes();
-                this.nextShapeIndex = this.tempShapes[1];
+                if (this.tempShapes.length === 0) this.initTempShapes();
+                this.nextShapeIndex = this.tempShapes[0];
                 this.drawNextShape();
             },
             initTempShapes: function () {
                 let baseShapes = Array.from({length: this.shapes.length - 1}, (_, i) => i);
-                this.tempShapes = [];
-                for(let i = 0; i < 2; i++) {
-                     let tempSet = [...baseShapes];
-                     for (let k = tempSet.length - 1; k > 0; k--) {
-                        const j = Math.floor(Math.random() * (k + 1));
-                        [tempSet[k], tempSet[j]] = [tempSet[j], tempSet[k]];
-                     }
-                     this.tempShapes.push(...tempSet);
+                let tempSet = [...baseShapes];
+                for (let k = tempSet.length - 1; k > 0; k--) {
+                    const j = Math.floor(Math.random() * (k + 1));
+                    [tempSet[k], tempSet[j]] = [tempSet[j], tempSet[k]];
                 }
-                if (this.gameMode === 'demolition' && Math.random() < 0.25) {
-                    this.tempShapes.splice(Math.floor(Math.random() * 5) + 1, 0, 7);
+                this.tempShapes = tempSet;
+                if (this.gameMode === 'demolition') {
+                    const position = Math.floor(Math.random() * (this.tempShapes.length - 2)) + 1;
+                    this.tempShapes.splice(position, 0, 7);
                 }
             },
             drawNextShape: function () {
@@ -615,11 +595,18 @@
                 const controls={'left-btn':'L','right-btn':'R','down-btn':'D','rotate-btn':'RT'};
                 this.eventHandlers.mobile = [];
                 for (const [id, move] of Object.entries(controls)) {
-                    const btn=document.getElementById(id); let int;
-                    const start=e=>{e.preventDefault(); soundManager.startContext(); if(int||this.isPaused||this.isGameOver)return; this.move(move); int=setInterval(()=>this.move(move),120)};
-                    const end=()=>{clearInterval(int); int=null};
+                    const btn=document.getElementById(id); 
+                    const intervalRef = { id: null };
+                    const start=e=>{
+                        e.preventDefault(); soundManager.startContext(); 
+                        if(intervalRef.id||this.isPaused||this.isGameOver)return; 
+                        this.move(move); 
+                        intervalRef.id=setInterval(()=>this.move(move),120)
+                    };
+                    const end=()=>{clearInterval(intervalRef.id); intervalRef.id=null};
                     btn.addEventListener('mousedown',start); btn.addEventListener('touchstart',start,{passive:false});
-                    btn.addEventListener('mouseup',end); btn.addEventListener('mouseleave',end); btn.addEventListener('touchend',end);
+                    btn.addEventListener('mouseup',end); btn.addEventListener('mouseleave',end);
+                    btn.addEventListener('touchend',end); btn.addEventListener('touchcancel', end);
                     this.eventHandlers.mobile.push({btn,start,end});
                 }
             },
@@ -627,7 +614,8 @@
                 if (this.eventHandlers.keyDown) document.removeEventListener('keydown', this.eventHandlers.keyDown);
                 if (this.eventHandlers.mobile) this.eventHandlers.mobile.forEach(({btn,start,end})=>{
                     btn.removeEventListener('mousedown',start); btn.removeEventListener('touchstart',start);
-                    btn.removeEventListener('mouseup',end); btn.removeEventListener('mouseleave',end); btn.removeEventListener('touchend',end);
+                    btn.removeEventListener('mouseup',end); btn.removeEventListener('mouseleave',end);
+                    btn.removeEventListener('touchend',end); btn.removeEventListener('touchcancel', end);
                 });
                 this.eventHandlers = {};
             },
@@ -658,13 +646,9 @@
                 if (this.isPaused) {
                     this.clearTimers(); 
                     elements.pauseMenu.classList.add('visible');
-                    elements.pauseIcon.classList.add('hidden');
-                    elements.resumeIcon.classList.remove('hidden');
                     soundManager.play('pause', 'C4');
                 } else {
                     elements.pauseMenu.classList.remove('visible'); 
-                    elements.pauseIcon.classList.remove('hidden');
-                    elements.resumeIcon.classList.add('hidden');
                     soundManager.play('pause', 'G4');
                     this.play();
                 }
@@ -695,6 +679,7 @@
             },
             move: function (dir) {
                 if (this.isPaused || this.isGameOver) return;
+                soundManager.play('move');
                 if (dir === "RT") { this.rotate(); return; }
                 let tempX=this.curX, tempY=this.curY;
                 if(dir==='L')tempX--; if(dir==='R')tempX++; if(dir==='D')tempY++;
@@ -706,7 +691,7 @@
                 }
             },
             rotate: function () {
-                if (this.curShapeIndex >= 5) return;
+                if (this.curShapeIndex === 5 || this.curShapeIndex === 7) return; // O-shape and Bomb don't rotate
                 const tempShape = this.curShape.map(([x,y]) => [-y,x]);
                 for (const kick of [0,1,-1,2,-2]) {
                     if (this.checkMove(this.curX + kick, this.curY, tempShape)) {
@@ -725,7 +710,6 @@
                 return clearedRows;
             },
             animateAndRemoveRows: function(rows) {
-                this.maxLinesClearedInTurn = Math.max(this.maxLinesClearedInTurn, rows.length);
                 this.sqs.forEach(sq => { const [,sqY] = this.getPos(sq); if (rows.includes(sqY)) sq.classList.add('line-clear'); });
                 setTimeout(() => {
                     this.removeRows(rows); this.calcScore({ lines: rows.length }); this.checkLevelUp();
@@ -758,12 +742,14 @@
                 this.updateInfo();
             },
             checkLevelUp: function () {
-                let newLevel = this.level;
-                if (this.gameMode === 'classic') newLevel = Math.floor(this.lines / 10) + 1;
-                else if (this.gameMode === 'avalanche') newLevel = Math.floor(this.lines / 5) + 1;
-                if(newLevel > this.level) { this.level = newLevel; }
-                this.speed = Math.max(100, 700 - ((this.level-1) * 50));
-                this.updateInfo();
+                const oldLevel = this.level;
+                if (this.gameMode === 'classic') this.level = Math.floor(this.lines / 10) + 1;
+                else if (this.gameMode === 'avalanche') this.level = Math.floor(this.lines / 5) + 1;
+                
+                if (this.level > oldLevel) {
+                    this.speed = this.levelSpeeds[Math.min(this.level - 1, this.levelSpeeds.length - 1)];
+                    this.updateInfo();
+                }
             },
             scheduleAvalanche: function() {
                 if (this.isPaused || this.isGameOver) return;
@@ -823,11 +809,17 @@
         };
         
         function resizeGame() {
+            const gameWrapper = document.getElementById('game-wrapper');
             const gameContainer = document.getElementById('game-container');
-            if (!gameContainer || !gameContainer.offsetParent) return;
-            const baseWidth = (window.innerHeight <= 740) ? 400 : 480;
-            const baseHeight = 720;
-            const scale = Math.min(window.innerWidth/baseWidth, window.innerHeight/baseHeight, 1.1);
+            if (!gameContainer || !gameWrapper) return;
+            
+            const availableWidth = gameWrapper.clientWidth;
+            const availableHeight = gameWrapper.clientHeight;
+
+            const baseWidth = 420;
+            const baseHeight = 680;
+            
+            const scale = Math.min(availableWidth / baseWidth, availableHeight / baseHeight, 1.1);
             gameContainer.style.transform = `scale(${scale})`;
         }
 
@@ -836,35 +828,46 @@
             await stats.load();
             soundManager.init();
             
+            document.body.addEventListener('click', () => soundManager.startContext(), { once: true });
+
             elements.mainMenu.addEventListener('click', (e) => {
-                const btn = e.target.closest('.btn[data-mode]');
-                if (btn) {
-                    soundManager.startContext();
+                const target = e.target.closest('button');
+                if (!target) return;
+                
+                soundManager.play('click');
+
+                if (target.dataset.mode) {
                     elements.mainMenu.classList.remove('visible');
                     elements.gameWrapper.classList.remove('hidden');
-                    tetris.init(btn.dataset.mode); resizeGame();
+                    tetris.init(target.dataset.mode); resizeGame();
+                } else if (target.id === 'stats-btn') {
+                    stats.display(); showModal(elements.statsModal);
+                } else if (target.id === 'rules-btn') {
+                    showModal(elements.rulesModal);
+                } else if (target.id === 'settings-btn') {
+                    showModal(elements.settingsModal);
                 }
             });
 
             const showModal = (modal) => modal.classList.add('visible');
             const hideModal = (modal) => modal.classList.remove('visible');
-
-            elements.statsBtn.addEventListener('click', () => { stats.display(); showModal(elements.statsModal); });
-            elements.rulesBtn.addEventListener('click', () => showModal(elements.rulesModal));
-            elements.settingsBtn.addEventListener('click', () => showModal(elements.settingsModal));
             
-            elements.closeStatsBtn.addEventListener('click', () => hideModal(elements.statsModal));
-            elements.closeRulesBtn.addEventListener('click', () => hideModal(elements.rulesModal));
-            elements.closeSettingsBtn.addEventListener('click', () => hideModal(elements.settingsModal));
+            [elements.closeStatsBtn, elements.closeRulesBtn, elements.closeSettingsBtn].forEach(btn => {
+                btn.addEventListener('click', () => {
+                    soundManager.play('click');
+                    hideModal(btn.closest('.modal-overlay'));
+                });
+            });
             
             elements.pauseBtn.addEventListener('click', () => tetris.togglePause());
-            elements.resumeBtn.addEventListener('click', () => tetris.togglePause());
+            elements.resumeBtn.addEventListener('click', () => { soundManager.play('click'); tetris.togglePause(); });
             
-            const restart = () => { hideModal(elements.pauseMenu); hideModal(elements.gameOverMenu); tetris.init(tetris.gameMode); };
+            const restart = () => { soundManager.play('click'); hideModal(elements.pauseMenu); hideModal(elements.gameOverMenu); tetris.init(tetris.gameMode); };
             elements.restartBtn.addEventListener('click', restart);
             elements.restartGameOverBtn.addEventListener('click', restart);
 
             const toMainMenu = () => {
+                soundManager.play('click');
                 tetris.cleanup();
                 hideModal(elements.pauseMenu); hideModal(elements.gameOverMenu);
                 elements.gameWrapper.classList.add('hidden');
