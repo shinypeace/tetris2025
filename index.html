@@ -13,7 +13,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         /* ========================================
-        Новый Дизайн "Тетрис" v5.2 - Исправления
+        Новый Дизайн "Тетрис" v5.3 - Исправления
         ======================================== */
         :root {
             --bg-gradient-start: #1e1349;
@@ -164,6 +164,7 @@
             height: 20px;
             box-sizing: border-box;
             border-radius: 4px;
+            /* ИЗМЕНЕНО: Анимация (transition) теперь будет отключаться во время спецэффектов */
             transition: opacity 0.2s, transform 0.2s, top 0.08s linear, left 0.08s linear;
             box-shadow: inset 0 0 5px rgba(0,0,0,0.4);
             border: 1px solid rgba(0,0,0,0.3);
@@ -174,12 +175,11 @@
             transform-origin: center;
         }
         .square.bomb-clear { 
-            animation: bomb-clear-anim 0.4s ease-out forwards; /* ИЗМЕНЕНО: Длительность */
+            animation: bomb-clear-anim 0.4s ease-out forwards;
             transform-origin: center;
         }
         .square.blinking { animation: blink 0.8s infinite; }
 
-        /* ИЗМЕНЕНО: Новые Keyframes для анимаций */
         @keyframes line-clear-anim {
             0%   { transform: scale(1); opacity: 1; filter: brightness(1.5); box-shadow: 0 0 10px #fff; }
             50%  { transform: scale(1.1); opacity: 0.5; filter: brightness(2.5); box-shadow: 0 0 20px #fff; }
@@ -188,7 +188,7 @@
         
         @keyframes bomb-clear-anim {
             0%   { transform: scale(1); opacity: 1; filter: brightness(2); }
-            100% { transform: scale(3); opacity: 0; filter: brightness(4); } /* Эффект "взрывной волны" */
+            100% { transform: scale(3); opacity: 0; filter: brightness(4); } 
         }
         
         @keyframes blink { 50% { opacity: 0.4; } }
@@ -276,7 +276,6 @@
         .stats-table th, .stats-table td { padding: 10px; text-align: left; }
         .stats-table thead { color: var(--text-accent); border-bottom: 1px solid var(--glass-border); }
         .stats-table tbody tr:not(:last-child) { border-bottom: 1px solid var(--glass-border); }
-        /* ИЗМЕНЕНО: text-align: right -> center */
         .stats-table td:nth-child(2), .stats-table td:nth-child(3) { text-align: center; font-weight: bold; }
 
         /* ========================================
@@ -328,7 +327,6 @@
 </head>
 <body oncontextmenu="return false;">
     
-    <!-- ДОБАВЛЕНО: Аудио тэг для музыки -->
     <audio id="bg-music" loop src="music.mp3"></audio>
 
     <div id="main-menu" class="modal-overlay visible">
@@ -353,8 +351,46 @@
         </div>
     </div>
     
-    <div id="settings-modal" class="modal-overlay"><div class="modal-content"><h1>Настройки</h1><div class="modal-body"><div class="settings-item"><span>Звуки</span><label class="toggle-switch"><input type="checkbox" id="sound-toggle"><span class="slider"></span></label></div></div><button id="close-settings-btn" class="btn">Закрыть</button></div></div>
-    <div id="rules-modal" class="modal-overlay"><div class="modal-content"><h1>Правила</h1><div class="modal-body rules-content"><h3>Классика</h3><p>Собирайте линии, чтобы набрать очки. Каждые 10 линий увеличивают уровень и скорость игры.</p><h3>Лавина</h3><p>Каждые несколько секунд снизу поднимается новый ряд блоков. Успевайте их разбирать, пока поле не заполнилось!</p><h3>Подрывник</h3><p>Среди фигур иногда попадаются бомбы. Установите бомбу, чтобы взорвать блоки в радиусе 3x3. Идеально для выхода из сложных ситуаций.</p></div><button id="close-rules-btn" class="btn">Понятно</button></div></div>
+    <!-- ИЗМЕНЕНО: Добавлен переключатель музыки -->
+    <div id="settings-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h1>Настройки</h1>
+            <div class="modal-body">
+                <div class="settings-item">
+                    <span>Звуки (SFX)</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="sfx-toggle">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="settings-item">
+                    <span>Музыка</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="music-toggle">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+            <button id="close-settings-btn" class="btn">Закрыть</button>
+        </div>
+    </div>
+    
+    <!-- ИЗМЕНЕНО: Обновлены правила для "Лавины" -->
+    <div id="rules-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h1>Правила</h1>
+            <div class="modal-body rules-content">
+                <h3>Классика</h3>
+                <p>Собирайте линии, чтобы набрать очки. Каждые 10 линий увеличивают уровень и скорость игры.</p>
+                <h3>Лавина</h3>
+                <p>Каждые 6 установленных фигур снизу поднимается новый ряд блоков. Успевайте их разбирать!</p>
+                <h3>Подрывник</h3>
+                <p>Среди фигур иногда попадаются бомбы. Установите бомбу, чтобы взорвать блоки в радиусе 3x3. Идеально для выхода из сложных ситуаций.</p>
+            </div>
+            <button id="close-rules-btn" class="btn">Понятно</button>
+        </div>
+    </div>
+
     <div id="game-over-menu" class="modal-overlay"><div class="modal-content"><h1 id="game-over-title">Конец Игры</h1><button id="restart-gameover-btn" class="btn">Заново</button><button id="main-menu-gameover-btn" class="btn">В меню</button></div></div>
     <div id="pause-menu" class="modal-overlay"><div class="modal-content"><h1>Пауза</h1><button id="resume-btn" class="btn">Продолжить</button><button id="restart-btn" class="btn">Заново</button><button id="main-menu-btn" class="btn">В меню</button></div></div>
     <div id="stats-modal" class="modal-overlay"><div class="modal-content"><h1>Статистика</h1><div id="stats-grid" class="modal-body"></div><button id="close-stats-btn" class="btn">Закрыть</button></div></div>
@@ -373,7 +409,6 @@
                     <button id="right-btn" class="control-btn" aria-label="Вправо">
                         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12l-4.58 4.59z"></path></svg>
                     </button>
-                    <!-- ИЗМЕНЕНО: Новая SVG для кнопки поворота -->
                     <button id="rotate-btn" class="control-btn" aria-label="Поворот">
                         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"></path></svg>
                     </button>
@@ -408,9 +443,11 @@
             gameOverTitle: document.getElementById('game-over-title'),
             canvas: document.getElementById('canvas'),
             nextShapeDisplay: document.getElementById("next_shape"),
-            soundToggle: document.getElementById('sound-toggle'),
+            // ИЗМЕНЕНО: Раздельные переключатели
+            sfxToggle: document.getElementById('sfx-toggle'),
+            musicToggle: document.getElementById('music-toggle'),
             statsGrid: document.getElementById('stats-grid'),
-            bgMusic: document.getElementById('bg-music'), // ДОБАВЛЕНО
+            bgMusic: document.getElementById('bg-music'), 
             displays: {
                 score: document.getElementById("score-val"),
                 lines: document.getElementById("lines-val"),
@@ -418,30 +455,38 @@
         };
 
         const soundManager = {
-            isMuted: true,
+            // ИЗМЕНЕНО: Раздел
+            isSfxMuted: true,
+            isMusicMuted: true,
             synths: {},
             init: function() {
                 this.synths.drop = new Tone.MembraneSynth({ pitchDecay: 0.01, octaves: 6, oscillator: { type: "sine", volume: -10 }, envelope: { attack: 0.001, decay: 0.2, sustain: 0.01, release: 0.1 } }).toDestination();
                 this.synths.clear = new Tone.PolySynth(Tone.Synth, { oscillator: { type: "fmsine", volume: -8 }, envelope: { attack: 0.01, decay: 0.2, sustain: 0.1, release: 0.2 } }).toDestination();
-                // ИЗМЕНЕНО: Новый, более мягкий звук поражения
                 this.synths.gameOver = new Tone.PolySynth(Tone.Synth, { oscillator: { type: 'triangle', volume: -8 }, envelope: { attack: 0.01, decay: 0.5, sustain: 0.1, release: 0.5 } }).toDestination();
                 this.synths.bomb = new Tone.NoiseSynth({ noise: { type: 'white', volume: -5 }, envelope: { attack: 0.005, decay: 0.3, sustain: 0 } }).toDestination();
                 this.synths.pause = new Tone.Synth({ oscillator: { type: 'sine', volume: -12 }, envelope: { attack: 0.01, decay: 0.1, sustain: 0.1, release: 0.1 } }).toDestination();
                 this.synths.click = new Tone.Synth({ oscillator: { type: "sine", volume: -15 }, envelope: { attack: 0.001, decay: 0.1, sustain: 0, release: 0.1 } }).toDestination();
                 
-                const savedMute = localStorage.getItem('tetrisMuted');
-                this.isMuted = savedMute !== 'false';
-                elements.soundToggle.checked = !this.isMuted;
-                elements.soundToggle.addEventListener('change', () => this.toggleMute());
+                // Настройка SFX
+                const savedSfxMute = localStorage.getItem('tetrisSfxMuted');
+                this.isSfxMuted = savedSfxMute !== 'false';
+                elements.sfxToggle.checked = !this.isSfxMuted;
+                elements.sfxToggle.addEventListener('change', () => this.toggleSfxMute());
+                
+                // Настройка Музыки
+                const savedMusicMute = localStorage.getItem('tetrisMusicMuted');
+                this.isMusicMuted = savedMusicMute !== 'false';
+                elements.musicToggle.checked = !this.isMusicMuted;
+                elements.musicToggle.addEventListener('change', () => this.toggleMusicMute());
             },
             play: function(sound, note = "C4") {
-                if (this.isMuted || !Tone.context.state || Tone.context.state !== 'running') return;
+                // ИЗМЕНЕНО: Проверка isSfxMuted
+                if (this.isSfxMuted || !Tone.context.state || Tone.context.state !== 'running') return;
                 try {
                     const now = Tone.now();
                     switch(sound) {
                         case 'drop': this.synths.drop.triggerAttackRelease("C2", "8n"); break;
                         case 'clear': this.synths.clear.triggerAttackRelease(["C4", "E4", "G4", "C5"], "8n"); break;
-                        // ИЗМЕНЕНО: Новый звук поражения (арпеджио)
                         case 'gameOver':
                             this.synths.gameOver.triggerAttackRelease(["G3", "E3", "C3"], "8n", now);
                             this.synths.gameOver.triggerAttackRelease("G2", "4n", now + 0.3);
@@ -452,33 +497,39 @@
                     }
                 } catch (e) { /* silent fail */ }
             },
-            toggleMute: function() {
-                this.isMuted = !elements.soundToggle.checked;
-                localStorage.setItem('tetrisMuted', this.isMuted);
-                if (!this.isMuted) {
-                    this.startContext(); // startContext теперь также запускает музыку
+            // ИЗМЕНЕНО: toggleMute -> toggleSfxMute
+            toggleSfxMute: function() {
+                this.isSfxMuted = !elements.sfxToggle.checked;
+                localStorage.setItem('tetrisSfxMuted', this.isSfxMuted);
+                if (!this.isSfxMuted) this.startContext();
+            },
+            // ДОБАВЛЕНО: toggleMusicMute
+            toggleMusicMute: function() {
+                this.isMusicMuted = !elements.musicToggle.checked;
+                localStorage.setItem('tetrisMusicMuted', this.isMusicMuted);
+                if (!this.isMusicMuted) {
+                    this.startContext(); // Запустит музыку, если контекст работает
                 } else {
-                    elements.bgMusic.pause(); // ДОБАВЛЕНО: Глушим музыку
+                    elements.bgMusic.pause();
                 }
             },
             startContext: function() { 
                 if (Tone.context.state !== 'running') Tone.start();
-                // ДОБАВЛЕНО: Запуск музыки, если она не выключена и на паузе
-                if (!this.isMuted && elements.bgMusic.paused) {
+                // ИЗМЕНЕНО: Проверка isMusicMuted
+                if (!this.isMusicMuted && elements.bgMusic.paused) {
                     elements.bgMusic.play().catch(e => {});
                 }
             }
         };
 
         let isVK = false;
-        let wasMusicPlaying = false; // ДОБАВЛЕНО
+        let wasMusicPlaying = false; 
         const STATS_VK_KEY = 'tetrisGameStats_v5';
 
         async function initVK() {
             try {
                 await vkBridge.send('VKWebAppInit'); isVK = true;
 
-                // ДОБАВЛЕНО: Логика паузы музыки при сворачивании
                 vkBridge.subscribe(e => {
                     if (e.detail.type === 'VKWebAppViewHide') {
                         if (!elements.bgMusic.paused) {
@@ -487,7 +538,8 @@
                         }
                     }
                     if (e.detail.type === 'VKWebAppViewRestore') {
-                        if (wasMusicPlaying && !soundManager.isMuted) {
+                        // ИЗМЕНЕНО: Проверка isMusicMuted
+                        if (wasMusicPlaying && !soundManager.isMusicMuted) {
                            elements.bgMusic.play().catch(e => {});
                         }
                         wasMusicPlaying = false;
@@ -506,8 +558,8 @@
             isActive: false, isPaused: false, isGameOver: false,
             gameLoopTimeout: null, timeCounterInterval: null, 
             pSize: 20, boardHeight: 22, boardWidth: 12, spawnX: 5, spawnY: 0,
-            // ИЗМЕНЕНО: Добавлены счетчики для режима "Лавина"
-            avalancheCounter: 0, AVALANCHE_MOVES_THRESHOLD: 7,
+            // ИЗМЕНЕНО: Порог лавины
+            avalancheCounter: 0, AVALANCHE_MOVES_THRESHOLD: 6,
             shapes: [
                 [[0,0],[-1,0],[0,-1],[1,-1]],// 0: Z Red
                 [[0,0],[1,0],[0,-1],[-1,-1]],// 1: S Green
@@ -529,7 +581,6 @@
                 this.initShapes();
                 this.bindEvents();
                 this.play();
-                // УДАЛЕНО: scheduleAvalanche() больше не нужен
             },
             cleanup: function() { this.clearTimers(); this.unbindEvents(); elements.canvas.innerHTML = ''; },
             resetState: function() {
@@ -537,7 +588,7 @@
                     board: [], sqs: [], curSqs: [], ghostSqs: [], tempShapes: [],
                     score: 0, level: 1, lines: 0, time: 0,
                     isActive: true, isPaused: false, isGameOver: false,
-                    avalancheCounter: 0 // ИЗМЕНЕНО: Сброс счетчика
+                    avalancheCounter: 0 
                 });
                 this.speed = this.levelSpeeds[0];
             },
@@ -547,7 +598,7 @@
                 elements.displays.lines.textContent = this.lines;
             },
             initShapes: function () {
-                if (this.tempShapes.length < 2) this.generateShapeBag();
+                if (this.tempShapes.length < 2) this.generateBag();
                 
                 this.curShapeIndex = this.tempShapes.shift();
                 this.curShape = JSON.parse(JSON.stringify(this.shapes[this.curShapeIndex]));
@@ -559,7 +610,7 @@
                 if (this.checkMove(this.curX, this.curY, this.curShape)) this.drawShape();
                 else this.gameOver();
             },
-            generateShapeBag: function() {
+            generateBag: function() {
                 let baseShapes = Array.from({length: 7}, (_, i) => i);
                 for (let k = baseShapes.length - 1; k > 0; k--) {
                     const j = Math.floor(Math.random() * (k + 1));
@@ -683,9 +734,7 @@
             startGameLoop: function() { this.gameLoopTimeout = setTimeout(() => this.gameLoop(), this.speed); },
             clearTimers: function () {
                 clearTimeout(this.gameLoopTimeout);
-                // clearTimeout(this.avalancheTimeout); // УДАЛЕНО
                 this.gameLoopTimeout=null;
-                // this.avalancheTimeout=null; // УДАЛЕНО
             },
             
             gameLoop: function() {
@@ -710,11 +759,10 @@
                     this.placeShape();
                     const clearedRows = this.checkRows(); 
 
-                    // ИЗМЕНЕНО: Логика "Лавины"
                     if (this.gameMode === 'avalanche') {
                         this.avalancheCounter++;
                         if (this.avalancheCounter >= this.AVALANCHE_MOVES_THRESHOLD) {
-                            if (this.triggerAvalanche()) return; // triggerAvalanche вернет true, если игра окончена
+                            if (this.triggerAvalanche()) return; 
                             this.avalancheCounter = 0;
                         }
                     }
@@ -738,7 +786,8 @@
                  if (dir === 'D') {
                     if (this.checkMove(this.curX, this.curY + 1, this.curShape)) {
                         this.curY++; this.drawShape();
-                        this.calcScore({ softDrop: 1 }); // Оставляем начисление за softDrop
+                        // ИЗМЕНЕНО: Убран подсчет очков за softDrop
+                        // this.calcScore({ softDrop: 1 }); 
                         clearTimeout(this.gameLoopTimeout); this.startGameLoop();
                     }
                 }
@@ -763,10 +812,16 @@
                 return clearedRows;
             },
             animateAndRemoveRows: function(rows) {
-                this.sqs.forEach(sq => { const [,sqY] = this.getPos(sq); if (rows.includes(sqY)) sq.classList.add('line-clear'); });
+                // ИЗМЕНЕНО: Отключаем transition, чтобы не конфликтовать с animation
+                this.sqs.forEach(sq => { 
+                    const [,sqY] = this.getPos(sq); 
+                    if (rows.includes(sqY)) {
+                        sq.style.transition = 'none'; // <-- ВАЖНОЕ ИСПРАВЛЕНИЕ
+                        sq.classList.add('line-clear'); 
+                    }
+                });
                 setTimeout(() => {
                     this.removeRows(rows); 
-                    // ИЗМЕНЕНО: Подсчет очков ПЕРЕД проверкой уровня
                     this.calcScore({ lines: rows.length }); 
                     this.checkLevelUp();
                     if (!this.isGameOver) { this.initShapes(); this.startGameLoop(); }
@@ -792,34 +847,28 @@
             },
             getPos: (b) => [Math.round(parseInt(b.style.left)/this.pSize), Math.round(parseInt(b.style.top)/this.pSize)],
             
-            // ИЗМЕНЕНО: Логика подсчета очков (сама логика верная, как в NES)
             calcScore: function (args) {
                 if (args.lines) { 
-                    // [0, 1, 2, 3, 4] lines
                     const lineScores = [0, 40, 100, 300, 1200];
                     this.score += lineScores[args.lines] * this.level; 
                     this.lines += args.lines; 
                 }
-                if (args.softDrop) {
-                    this.score += args.softDrop; // 1 очко за клетку soft drop
-                }
+                // ИЗМЕНЕНО: Убран подсчет очков за softDrop
+                // if (args.softDrop) { this.score += args.softDrop; }
                 if (args.bombClear) {
-                    this.score += args.bombClear * 10; // Очки за бомбу
+                    this.score += args.bombClear * 10; 
                 }
                 this.updateInfo();
             },
             checkLevelUp: function () {
                 const oldLevel = this.level;
-                // Уровень повышается каждые 10 линий
                 const newLevel = Math.floor(this.lines / 10) + 1;
                 if (newLevel > oldLevel) {
-                    this.level = newLevel; // Обновляем уровень
+                    this.level = newLevel; 
                     this.speed = this.levelSpeeds[Math.min(this.level - 1, this.levelSpeeds.length - 1)];
                 }
             },
-            // УДАЛЕНО: scheduleAvalanche
             
-            // ИЗМЕНЕНО: Новая функция triggerAvalanche
             triggerAvalanche: function() {
                 if (this.isPaused || this.isGameOver) return false;
                 this.board.shift();
@@ -829,10 +878,10 @@
                 if (this.board[0].some(c => c !== null)) { 
                     this.redrawAllBlocks(); 
                     this.gameOver(); 
-                    return true; // Игра окончена
+                    return true; 
                 }
                 this.redrawAllBlocks();
-                return false; // Игра продолжается
+                return false; 
             },
 
             detonateBomb: function(x,y) {
@@ -844,22 +893,28 @@
                         if(this.board[cY][cX] !== null) { this.board[cY][cX] = null; clearedCount++; }
                     }
                 }
-                this.sqs.forEach(sq => { const [sqX, sqY] = this.getPos(sq); if (blastCoords.some(c => c.x === sqX && c.y === sqY)) sq.classList.add('bomb-clear'); });
+                // ИЗМЕНЕНО: Отключаем transition
+                this.sqs.forEach(sq => { 
+                    const [sqX, sqY] = this.getPos(sq); 
+                    if (blastCoords.some(c => c.x === sqX && c.y === sqY)) {
+                        sq.style.transition = 'none'; // <-- ВАЖНОЕ ИСПРАВЛЕНИЕ
+                        sq.classList.add('bomb-clear'); 
+                    }
+                });
                 soundManager.play('bomb');
                 setTimeout(() => {
                     this.redrawAllBlocks(); this.calcScore({ bombClear: clearedCount });
 
-                    // ИЗМЕНЕНО: Логика "Лавины" после взрыва
                     if (this.gameMode === 'avalanche') {
                         this.avalancheCounter++;
                         if (this.avalancheCounter >= this.AVALANCHE_MOVES_THRESHOLD) {
-                            if (this.triggerAvalanche()) return; // Если игра окончена, выходим
+                            if (this.triggerAvalanche()) return; 
                             this.avalancheCounter = 0;
                         }
                     }
 
                     this.initShapes(); this.startGameLoop();
-                }, 400); // 400ms, чтобы соответствовать анимации
+                }, 400); 
             }
         };
 
@@ -908,9 +963,8 @@
             await initVK();
             await stats.load();
             soundManager.init();
-            elements.bgMusic.volume = 0.3; // ДОБАВЛЕНО: Громкость музыки
+            elements.bgMusic.volume = 0.3; 
             
-            // ИЗМЕНЕНО: startContext теперь вызывается по клику
             document.body.addEventListener('click', () => soundManager.startContext(), { once: true });
 
             elements.mainMenu.addEventListener('click', (e) => {
