@@ -89,110 +89,17 @@
             max-width: 520px;
         }
         
-        #main-content {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 20px;
-        }
-
-        #canvas {
-            width: 240px; /* 12 * 20px */
-            height: 440px; /* 22 * 20px */
-            background-color: rgba(0,0,0,0.3);
-            position: relative;
-            border-radius: 12px;
-            border: 1px solid var(--glass-border);
-            background-image: 
-                linear-gradient(to right, var(--grid-color) 1px, transparent 1px),
-                linear-gradient(to bottom, var(--grid-color) 1px, transparent 1px);
-            background-size: 20px 20px;
-            overflow: hidden;
-            box-shadow: inset 0 0 20px rgba(0,0,0,0.6);
-        }
-
-        /* ========================================
-        Информационная Панель
-        ======================================== */
-        #side-info-panel {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            width: 120px;
-            text-align: center;
-        }
-
-        .info-box {
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            backdrop-filter: blur(5px);
-            -webkit-backdrop-filter: blur(5px);
-            border-radius: 12px;
-            padding: 8px 5px;
-            transition: background-color 0.2s;
-        }
-        .info-box p {
-            margin: 0;
-            font-size: 10px;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            font-weight: 600;
-        }
-        .info-box span {
-            display: block;
-            font-size: 18px;
-            color: var(--text-primary);
-            margin-top: 4px;
-            font-weight: 700;
-        }
-
-        #next_shape {
-            position: relative;
-            width: 100%;
-            height: 70px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        
-        /* ========================================
-        Фигуры и Эффекты
-        ======================================== */
-        .square {
-            position: absolute;
-            width: 20px;
-            height: 20px;
-            box-sizing: border-box;
-            border-radius: 4px;
-            /* Анимация (transition) теперь будет отключаться во время спецэффектов */
-            transition: opacity 0.2s, transform 0.2s, top 0.08s linear, left 0.08s linear;
-            box-shadow: inset 0 0 5px rgba(0,0,0,0.4);
-            border: 1px solid rgba(0,0,0,0.3);
-        }
-        .square.ghost { background-color: transparent !important; box-shadow: none; border: 2px solid var(--ghost-color); }
-        .square.line-clear { 
-            /* ИЗМЕНЕНО: Анимация */
-            animation: line-clear-anim 0.4s ease-out forwards;
-            transform-origin: center;
-        }
-        .square.bomb-clear { 
-            /* ИЗМЕНЕНО: Анимация */
-            animation: bomb-clear-anim 0.4s ease-out forwards;
-            transform-origin: center;
-        }
-        .square.blinking { animation: blink 0.8s infinite; }
-
-        /* ИЗМЕНЕНО: Улучшенная анимация очистки линии */
+        /* ИЗМЕНЕНО: Более плавная и заметная анимация очистки линии */
         @keyframes line-clear-anim {
-            0%   { transform: scale(1); opacity: 1; background-color: #fff; box-shadow: 0 0 15px #fff; }
-            50%  { transform: scale(1.1); opacity: 0.5; background-color: #fff; }
-            100% { transform: scale(0); opacity: 0; background-color: #fff; }
+            0%   { transform: scale(1) rotate(0deg); opacity: 1; }
+            20%  { transform: scale(1.15) rotate(5deg); background-color: #fff; box-shadow: 0 0 25px #fff; }
+            100% { transform: scale(0) rotate(-10deg); opacity: 0; }
         }
         
-        /* ИЗМЕНЕНО: Улучшенная анимация взрыва бомбы */
+        /* ИЗМЕНЕНО: Более "взрывная" анимация бомбы */
         @keyframes bomb-clear-anim {
-            0%   { transform: scale(1) rotate(0deg); opacity: 1; border-radius: 4px; }
-            100% { transform: scale(3.5) rotate(180deg); opacity: 0; border-radius: 50%; } 
+            0%   { transform: scale(1); opacity: 1; border-radius: 4px; }
+            100% { transform: scale(5.5); opacity: 0; border-radius: 50%; } 
         }
         
         @keyframes blink { 50% { opacity: 0.4; } }
@@ -460,26 +367,30 @@
             isMusicMuted: true,
             synths: {},
             init: function() {
-                // ИЗМЕНЕНО: Улучшенные звуки
+                // ИЗМЕНЕНО: Добавлен Reverb для более приятного звука
+                this.synths.reverb = new Tone.Reverb(0.6).toDestination(); // 0.6 seconds decay
+                this.synths.reverb.wet.value = 0.4; // 40% wet signal
+
                 this.synths.drop = new Tone.MembraneSynth({ pitchDecay: 0.01, octaves: 6, oscillator: { type: "sine", volume: -10 }, envelope: { attack: 0.001, decay: 0.2, sustain: 0.01, release: 0.1 } }).toDestination();
                 
-                // Звук очистки линии (более мелодичный)
+                // ИЗМЕНЕНО: Звук очистки линии (мягче + реверб)
                 this.synths.clear = new Tone.PolySynth(Tone.Synth, { 
-                    oscillator: { type: "fatsawtooth", volume: -12 }, 
-                    envelope: { attack: 0.01, decay: 0.3, sustain: 0.1, release: 0.3 } 
-                }).toDestination();
+                    oscillator: { type: "fmsine", volume: -10 }, 
+                    envelope: { attack: 0.01, decay: 0.3, sustain: 0.1, release: 0.4 } 
+                }).connect(this.synths.reverb); // <-- Подключен к ревербу
 
-                // Звук поражения (более грустный)
+                // ИЗМЕНЕНО: Звук поражения (с ревербом)
                 this.synths.gameOver = new Tone.PolySynth(Tone.Synth, { 
                     oscillator: { type: 'triangle', volume: -8 }, 
                     envelope: { attack: 0.01, decay: 0.5, sustain: 0.1, release: 0.5 } 
-                }).toDestination();
+                }).connect(this.synths.reverb); // <-- Подключен к ревербу
 
-                // Звук бомбы (более мощный "бум")
+                // ИЗМЕНЕНО: Звук бомбы (с ревербом)
                 this.synths.bomb = new Tone.NoiseSynth({ 
                     noise: { type: 'white', playbackRate: 0.5, volume: -10 }, 
                     envelope: { attack: 0.005, decay: 0.3, sustain: 0 } 
-                }).toDestination();
+                }).connect(this.synths.reverb); // <-- Подключен к ревербу
+                
                 // Добавляем низкочастотный "удар" к бомбе
                 this.synths.bombKick = new Tone.MembraneSynth({
                     pitchDecay: 0.05, octaves: 10,
@@ -507,8 +418,8 @@
                     const now = Tone.now();
                     switch(sound) {
                         case 'drop': this.synths.drop.triggerAttackRelease("C2", "8n", now); break;
-                        // ИЗМЕНЕНО: Новый звук (мажорный аккорд)
-                        case 'clear': this.synths.clear.triggerAttackRelease(["C4", "E4", "G4", "C5"], "16n", now); break;
+                        // ИЗМЕНЕНО: Новый звук (мажорный аккорд) и увеличена длительность
+                        case 'clear': this.synths.clear.triggerAttackRelease(["C4", "E4", "G4", "C5"], "8n", now); break;
                         // ИЗМЕНЕНО: Новый звук (минорный нисходящий)
                         case 'gameOver':
                             this.synths.gameOver.triggerAttackRelease(["C4", "G3", "E3", "C3"], "8n", now);
@@ -860,7 +771,7 @@
                 this.sqs.forEach(sq => { 
                     const [,sqY] = this.getPos(sq); 
                     if (rows.includes(sqY)) {
-                        sq.style.transition = 'none'; // <-- ВАЖНОЕ ИСПРАВЛЕНИЕ
+                        sq.style.transition = 'all 0s linear'; // <-- ИЗМЕНЕНО: Более надежное отключение transition
                         sq.classList.add('line-clear'); 
                     }
                 });
@@ -940,7 +851,7 @@
                 this.sqs.forEach(sq => { 
                     const [sqX, sqY] = this.getPos(sq); 
                     if (blastCoords.some(c => c.x === sqX && c.y === sqY)) {
-                        sq.style.transition = 'none'; // <-- ВАЖНОЕ ИСПРАВЛЕНИЕ
+                        sq.style.transition = 'all 0s linear'; // <-- ИЗМЕНЕНО: Более надежное отключение transition
                         sq.classList.add('bomb-clear'); 
                     }
                 });
@@ -1063,3 +974,4 @@
     </script>
 </body>
 </html>
+
