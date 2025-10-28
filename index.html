@@ -13,7 +13,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         /* ========================================
-        Новый Дизайн "Тетрис" v5.5 - Полная сборка
+        Новый Дизайн "Тетрис" v5.6 - Фикс анимаций
         ======================================== */
         :root {
             --bg-gradient-start: #1e1349;
@@ -171,18 +171,18 @@
         }
         .square.ghost { background-color: transparent !important; box-shadow: none; border: 2px solid var(--ghost-color); }
         .square.line-clear { 
-            /* ИЗМЕНЕНО: Анимация */
-            animation: line-clear-anim 0.4s ease-out forwards;
+            /* ИЗМЕНЕНО: Длительность анимации 0.3s */
+            animation: line-clear-anim 0.3s ease-out forwards;
             transform-origin: center;
         }
         .square.bomb-clear { 
-            /* ИЗМЕНЕНО: Анимация */
-            animation: bomb-clear-anim 0.4s ease-out forwards;
+            /* ИЗМЕНЕНО: Длительность анимации 0.3s */
+            animation: bomb-clear-anim 0.3s ease-out forwards;
             transform-origin: center;
         }
         .square.blinking { animation: blink 0.8s infinite; }
 
-        /* ИЗМЕНЕНО: Анимация очистки линии по твоему примеру 'Тетрис исчезновение.docx' */
+        /* ИЗМЕНЕНО: Анимация очистки линии 1-в-1 из твоего примера */
         @keyframes line-clear-anim {
             0%, 100% { opacity: 1; transform: scale(1); }
             50% { opacity: 0; transform: scale(0.5); }
@@ -459,36 +459,25 @@
             isMusicMuted: true,
             synths: {},
             init: function() {
-                // ИЗМЕНЕНО: Добавлен Reverb для более приятного звука
-                this.synths.reverb = new Tone.Reverb(0.6).toDestination(); // 0.6 seconds decay
-                this.synths.reverb.wet.value = 0.4; // 40% wet signal
-
+                this.synths.reverb = new Tone.Reverb(0.6).toDestination();
+                this.synths.reverb.wet.value = 0.4; 
                 this.synths.drop = new Tone.MembraneSynth({ pitchDecay: 0.01, octaves: 6, oscillator: { type: "sine", volume: -10 }, envelope: { attack: 0.001, decay: 0.2, sustain: 0.01, release: 0.1 } }).toDestination();
-                
-                // ИЗМЕНЕНО: Звук очистки линии (мягче + реверб)
                 this.synths.clear = new Tone.PolySynth(Tone.Synth, { 
                     oscillator: { type: "fmsine", volume: -10 }, 
                     envelope: { attack: 0.01, decay: 0.3, sustain: 0.1, release: 0.4 } 
-                }).connect(this.synths.reverb); // <-- Подключен к ревербу
-
-                // ИЗМЕНЕНО: Звук поражения (с ревербом)
+                }).connect(this.synths.reverb);
                 this.synths.gameOver = new Tone.PolySynth(Tone.Synth, { 
                     oscillator: { type: 'triangle', volume: -8 }, 
                     envelope: { attack: 0.01, decay: 0.5, sustain: 0.1, release: 0.5 } 
-                }).connect(this.synths.reverb); // <-- Подключен к ревербу
-
-                // ИЗМЕНЕНО: Звук бомбы (с ревербом)
+                }).connect(this.synths.reverb);
                 this.synths.bomb = new Tone.NoiseSynth({ 
                     noise: { type: 'white', playbackRate: 0.5, volume: -10 }, 
                     envelope: { attack: 0.005, decay: 0.3, sustain: 0 } 
-                }).connect(this.synths.reverb); // <-- Подключен к ревербу
-                
-                // Добавляем низкочастотный "удар" к бомбе
+                }).connect(this.synths.reverb);
                 this.synths.bombKick = new Tone.MembraneSynth({
                     pitchDecay: 0.05, octaves: 10,
                     envelope: { attack: 0.001, decay: 0.4, sustain: 0.01, release: 0.4 }
                 }).toDestination();
-                
                 this.synths.pause = new Tone.Synth({ oscillator: { type: 'sine', volume: -12 }, envelope: { attack: 0.01, decay: 0.1, sustain: 0.1, release: 0.1 } }).toDestination();
                 this.synths.click = new Tone.Synth({ oscillator: { type: "sine", volume: -15 }, envelope: { attack: 0.001, decay: 0.1, sustain: 0, release: 0.1 } }).toDestination();
                 
@@ -512,13 +501,10 @@
                     const now = Tone.now();
                     switch(sound) {
                         case 'drop': this.synths.drop.triggerAttackRelease("C2", "8n", now); break;
-                        // ИЗМЕНЕНО: Новый звук (мажорный аккорд) и увеличена длительность
                         case 'clear': this.synths.clear.triggerAttackRelease(["C4", "E4", "G4", "C5"], "8n", now); break;
-                        // ИЗМЕНЕНО: Новый звук (минорный нисходящий)
                         case 'gameOver':
                             this.synths.gameOver.triggerAttackRelease(["C4", "G3", "E3", "C3"], "8n", now);
                             break;
-                        // ИЗМЕНЕНО: Комбинированный звук
                         case 'bomb': 
                             this.synths.bomb.triggerAttackRelease("4n", now); 
                             this.synths.bombKick.triggerAttackRelease("C2", "4n", now);
@@ -530,14 +516,16 @@
             },
             toggleSfxMute: function() {
                 this.isSfxMuted = !elements.sfxToggle.checked;
-                localStorage.setItem('tetrisSfxMuted', this.isSfxMuted);
+                // ИЗМЕНЕНО: Сохраняем 'true'/'false' как строки
+                localStorage.setItem('tetrisSfxMuted', this.isSfxMuted ? 'true' : 'false');
                 if (!this.isSfxMuted) this.startContext();
             },
             toggleMusicMute: function() {
                 this.isMusicMuted = !elements.musicToggle.checked;
-                localStorage.setItem('tetrisMusicMuted', this.isMusicMuted);
+                // ИЗМЕНЕНО: Сохраняем 'true'/'false' как строки
+                localStorage.setItem('tetrisMusicMuted', this.isMusicMuted ? 'true' : 'false');
                 if (!this.isMusicMuted) {
-                    this.startContext(); // Запустит музыку, если контекст работает
+                    this.startContext();
                 } else {
                     elements.bgMusic.pause();
                 }
@@ -562,11 +550,7 @@
             try {
                 await vkBridge.send('VKWebAppInit'); 
                 isVK = true;
-
-                // ИЗМЕНЕНО: Пытаемся запустить музыку сразу после инициализации VK
-                // Это может дать права на автовоспроизведение
                 soundManager.startContext();
-
                 vkBridge.subscribe(e => {
                     if (e.detail.type === 'VKWebAppViewHide') {
                         if (!elements.bgMusic.paused) {
@@ -575,8 +559,6 @@
                         }
                     }
                     if (e.detail.type === 'VKWebAppViewRestore') {
-                        // ИЗМЕНЕНО: При восстановлении приложения, также перезапускаем аудиоконтекст
-                        // Это помогает, если приложение было свернуто надолго
                         soundManager.startContext();
                         if (wasMusicPlaying && !soundManager.isMusicMuted) {
                            elements.bgMusic.play().catch(e => {});
@@ -639,7 +621,7 @@
                 elements.displays.lines.textContent = this.lines;
             },
             initShapes: function () {
-                if (this.tempShapes.length < 2) this.generateBag();
+                if (!this.tempShapes || this.tempShapes.length < 2) this.generateBag();
                 
                 this.curShapeIndex = this.tempShapes.shift();
                 this.curShape = JSON.parse(JSON.stringify(this.shapes[this.curShapeIndex]));
@@ -652,6 +634,7 @@
                 else this.gameOver();
             },
             generateBag: function() {
+                if (!this.tempShapes) this.tempShapes = [];
                 let baseShapes = Array.from({length: 7}, (_, i) => i);
                 for (let k = baseShapes.length - 1; k > 0; k--) {
                     const j = Math.floor(Math.random() * (k + 1));
@@ -754,12 +737,9 @@
                 soundManager.play('gameOver');
                 
                 if(isVK) {
-                    // ИЗМЕНЕНО: Добавлен .finally() для перезапуска аудиоконтекста
                     vkBridge.send('VKWebAppShowNativeAds', {ad_format:'interstitial'})
                         .catch(e => { /* Ошибка показа рекламы, не страшно */ })
                         .finally(() => {
-                            // Это гарантирует, что звуки снова заработают
-                            // после закрытия рекламы (или если она не показалась)
                             soundManager.startContext();
                         });
                 }
@@ -861,20 +841,20 @@
                 return clearedRows;
             },
             animateAndRemoveRows: function(rows) {
-                // Отключаем transition, чтобы не конфликтовать с animation
+                // ИЗМЕНЕНО: Удалена строка sq.style.transition = 'all 0s linear';
                 this.sqs.forEach(sq => { 
                     const [,sqY] = this.getPos(sq); 
                     if (rows.includes(sqY)) {
-                        sq.style.transition = 'all 0s linear'; // <-- ИЗМЕНЕНО: Более надежное отключение transition
                         sq.classList.add('line-clear'); 
                     }
                 });
+                // ИЗМЕНЕНО: Таймер 300ms, чтобы соответствовать анимации
                 setTimeout(() => {
                     this.removeRows(rows); 
                     this.calcScore({ lines: rows.length }); 
                     this.checkLevelUp();
                     if (!this.isGameOver) { this.initShapes(); this.startGameLoop(); }
-                }, 400); // Эта задержка должна совпадать с длительностью CSS-анимации
+                }, 300); // Эта задержка должна совпадать с длительностью CSS-анимации
                 soundManager.play('clear');
             },
             removeRows: function(rows) {
@@ -898,7 +878,6 @@
             
             calcScore: function (args) {
                 if (args.lines) { 
-                    // Это классическая система подсчета очков. Все верно.
                     const lineScores = [0, 40, 100, 300, 1200];
                     this.score += lineScores[args.lines] * this.level; 
                     this.lines += args.lines; 
@@ -941,15 +920,15 @@
                         if(this.board[cY][cX] !== null) { this.board[cY][cX] = null; clearedCount++; }
                     }
                 }
-                // Отключаем transition
+                // ИЗМЕНЕНО: Удалена строка sq.style.transition = 'all 0s linear';
                 this.sqs.forEach(sq => { 
                     const [sqX, sqY] = this.getPos(sq); 
                     if (blastCoords.some(c => c.x === sqX && c.y === sqY)) {
-                        sq.style.transition = 'all 0s linear'; // <-- ИЗМЕНЕНО: Более надежное отключение transition
                         sq.classList.add('bomb-clear'); 
                     }
                 });
                 soundManager.play('bomb');
+                // ИЗМЕНЕНО: Таймер 300ms, чтобы соответствовать анимации
                 setTimeout(() => {
                     this.redrawAllBlocks(); this.calcScore({ bombClear: clearedCount });
 
@@ -962,7 +941,7 @@
                     }
 
                     this.initShapes(); this.startGameLoop();
-                }, 400); // Эта задержка должна совпадать с длительностью CSS-анимации
+                }, 300); // Эта задержка должна совпадать с длительностью CSS-анимации
             }
         };
 
@@ -1013,8 +992,6 @@
             soundManager.init();
             elements.bgMusic.volume = 0.3; 
             
-            // ИЗМЕНЕНО: Этот клик по-прежнему нужен как запасной вариант,
-            // если vkBridge.send('VKWebAppInit') не дал прав на автозапуск
             document.body.addEventListener('click', () => soundManager.startContext(), { once: true });
 
             elements.mainMenu.addEventListener('click', (e) => {
@@ -1068,5 +1045,4 @@
     </script>
 </body>
 </html>
-
 
