@@ -13,7 +13,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         /* ========================================
-        Новый Дизайн "Тетрис" v5.3 - Исправления
+        Новый Дизайн "Тетрис" v5.4 - Исправления
         ======================================== */
         :root {
             --bg-gradient-start: #1e1349;
@@ -164,31 +164,35 @@
             height: 20px;
             box-sizing: border-box;
             border-radius: 4px;
-            /* ИЗМЕНЕНО: Анимация (transition) теперь будет отключаться во время спецэффектов */
+            /* Анимация (transition) теперь будет отключаться во время спецэффектов */
             transition: opacity 0.2s, transform 0.2s, top 0.08s linear, left 0.08s linear;
             box-shadow: inset 0 0 5px rgba(0,0,0,0.4);
             border: 1px solid rgba(0,0,0,0.3);
         }
         .square.ghost { background-color: transparent !important; box-shadow: none; border: 2px solid var(--ghost-color); }
         .square.line-clear { 
+            /* ИЗМЕНЕНО: Анимация */
             animation: line-clear-anim 0.4s ease-out forwards;
             transform-origin: center;
         }
         .square.bomb-clear { 
+            /* ИЗМЕНЕНО: Анимация */
             animation: bomb-clear-anim 0.4s ease-out forwards;
             transform-origin: center;
         }
         .square.blinking { animation: blink 0.8s infinite; }
 
+        /* ИЗМЕНЕНО: Улучшенная анимация очистки линии */
         @keyframes line-clear-anim {
-            0%   { transform: scale(1); opacity: 1; filter: brightness(1.5); box-shadow: 0 0 10px #fff; }
-            50%  { transform: scale(1.1); opacity: 0.5; filter: brightness(2.5); box-shadow: 0 0 20px #fff; }
-            100% { transform: scale(0.8); opacity: 0; filter: brightness(1); }
+            0%   { transform: scale(1); opacity: 1; background-color: #fff; box-shadow: 0 0 15px #fff; }
+            50%  { transform: scale(1.1); opacity: 0.5; background-color: #fff; }
+            100% { transform: scale(0); opacity: 0; background-color: #fff; }
         }
         
+        /* ИЗМЕНЕНО: Улучшенная анимация взрыва бомбы */
         @keyframes bomb-clear-anim {
-            0%   { transform: scale(1); opacity: 1; filter: brightness(2); }
-            100% { transform: scale(3); opacity: 0; filter: brightness(4); } 
+            0%   { transform: scale(1) rotate(0deg); opacity: 1; border-radius: 4px; }
+            100% { transform: scale(3.5) rotate(180deg); opacity: 0; border-radius: 50%; } 
         }
         
         @keyframes blink { 50% { opacity: 0.4; } }
@@ -351,7 +355,6 @@
         </div>
     </div>
     
-    <!-- ИЗМЕНЕНО: Добавлен переключатель музыки -->
     <div id="settings-modal" class="modal-overlay">
         <div class="modal-content">
             <h1>Настройки</h1>
@@ -375,7 +378,6 @@
         </div>
     </div>
     
-    <!-- ИЗМЕНЕНО: Обновлены правила для "Лавины" -->
     <div id="rules-modal" class="modal-overlay">
         <div class="modal-content">
             <h1>Правила</h1>
@@ -443,7 +445,6 @@
             gameOverTitle: document.getElementById('game-over-title'),
             canvas: document.getElementById('canvas'),
             nextShapeDisplay: document.getElementById("next_shape"),
-            // ИЗМЕНЕНО: Раздельные переключатели
             sfxToggle: document.getElementById('sfx-toggle'),
             musicToggle: document.getElementById('music-toggle'),
             statsGrid: document.getElementById('stats-grid'),
@@ -455,15 +456,36 @@
         };
 
         const soundManager = {
-            // ИЗМЕНЕНО: Раздел
             isSfxMuted: true,
             isMusicMuted: true,
             synths: {},
             init: function() {
+                // ИЗМЕНЕНО: Улучшенные звуки
                 this.synths.drop = new Tone.MembraneSynth({ pitchDecay: 0.01, octaves: 6, oscillator: { type: "sine", volume: -10 }, envelope: { attack: 0.001, decay: 0.2, sustain: 0.01, release: 0.1 } }).toDestination();
-                this.synths.clear = new Tone.PolySynth(Tone.Synth, { oscillator: { type: "fmsine", volume: -8 }, envelope: { attack: 0.01, decay: 0.2, sustain: 0.1, release: 0.2 } }).toDestination();
-                this.synths.gameOver = new Tone.PolySynth(Tone.Synth, { oscillator: { type: 'triangle', volume: -8 }, envelope: { attack: 0.01, decay: 0.5, sustain: 0.1, release: 0.5 } }).toDestination();
-                this.synths.bomb = new Tone.NoiseSynth({ noise: { type: 'white', volume: -5 }, envelope: { attack: 0.005, decay: 0.3, sustain: 0 } }).toDestination();
+                
+                // Звук очистки линии (более мелодичный)
+                this.synths.clear = new Tone.PolySynth(Tone.Synth, { 
+                    oscillator: { type: "fatsawtooth", volume: -12 }, 
+                    envelope: { attack: 0.01, decay: 0.3, sustain: 0.1, release: 0.3 } 
+                }).toDestination();
+
+                // Звук поражения (более грустный)
+                this.synths.gameOver = new Tone.PolySynth(Tone.Synth, { 
+                    oscillator: { type: 'triangle', volume: -8 }, 
+                    envelope: { attack: 0.01, decay: 0.5, sustain: 0.1, release: 0.5 } 
+                }).toDestination();
+
+                // Звук бомбы (более мощный "бум")
+                this.synths.bomb = new Tone.NoiseSynth({ 
+                    noise: { type: 'white', playbackRate: 0.5, volume: -10 }, 
+                    envelope: { attack: 0.005, decay: 0.3, sustain: 0 } 
+                }).toDestination();
+                // Добавляем низкочастотный "удар" к бомбе
+                this.synths.bombKick = new Tone.MembraneSynth({
+                    pitchDecay: 0.05, octaves: 10,
+                    envelope: { attack: 0.001, decay: 0.4, sustain: 0.01, release: 0.4 }
+                }).toDestination();
+                
                 this.synths.pause = new Tone.Synth({ oscillator: { type: 'sine', volume: -12 }, envelope: { attack: 0.01, decay: 0.1, sustain: 0.1, release: 0.1 } }).toDestination();
                 this.synths.click = new Tone.Synth({ oscillator: { type: "sine", volume: -15 }, envelope: { attack: 0.001, decay: 0.1, sustain: 0, release: 0.1 } }).toDestination();
                 
@@ -480,30 +502,32 @@
                 elements.musicToggle.addEventListener('change', () => this.toggleMusicMute());
             },
             play: function(sound, note = "C4") {
-                // ИЗМЕНЕНО: Проверка isSfxMuted
                 if (this.isSfxMuted || !Tone.context.state || Tone.context.state !== 'running') return;
                 try {
                     const now = Tone.now();
                     switch(sound) {
-                        case 'drop': this.synths.drop.triggerAttackRelease("C2", "8n"); break;
-                        case 'clear': this.synths.clear.triggerAttackRelease(["C4", "E4", "G4", "C5"], "8n"); break;
+                        case 'drop': this.synths.drop.triggerAttackRelease("C2", "8n", now); break;
+                        // ИЗМЕНЕНО: Новый звук (мажорный аккорд)
+                        case 'clear': this.synths.clear.triggerAttackRelease(["C4", "E4", "G4", "C5"], "16n", now); break;
+                        // ИЗМЕНЕНО: Новый звук (минорный нисходящий)
                         case 'gameOver':
-                            this.synths.gameOver.triggerAttackRelease(["G3", "E3", "C3"], "8n", now);
-                            this.synths.gameOver.triggerAttackRelease("G2", "4n", now + 0.3);
+                            this.synths.gameOver.triggerAttackRelease(["C4", "G3", "E3", "C3"], "8n", now);
                             break;
-                        case 'bomb': this.synths.bomb.triggerAttackRelease("2n"); break;
-                        case 'pause': this.synths.pause.triggerAttackRelease(note, "8n"); break;
-                        case 'click': this.synths.click.triggerAttackRelease("C5", "16n"); break;
+                        // ИЗМЕНЕНО: Комбинированный звук
+                        case 'bomb': 
+                            this.synths.bomb.triggerAttackRelease("4n", now); 
+                            this.synths.bombKick.triggerAttackRelease("C2", "4n", now);
+                            break;
+                        case 'pause': this.synths.pause.triggerAttackRelease(note, "8n", now); break;
+                        case 'click': this.synths.click.triggerAttackRelease("C5", "16n", now); break;
                     }
                 } catch (e) { /* silent fail */ }
             },
-            // ИЗМЕНЕНО: toggleMute -> toggleSfxMute
             toggleSfxMute: function() {
                 this.isSfxMuted = !elements.sfxToggle.checked;
                 localStorage.setItem('tetrisSfxMuted', this.isSfxMuted);
                 if (!this.isSfxMuted) this.startContext();
             },
-            // ДОБАВЛЕНО: toggleMusicMute
             toggleMusicMute: function() {
                 this.isMusicMuted = !elements.musicToggle.checked;
                 localStorage.setItem('tetrisMusicMuted', this.isMusicMuted);
@@ -514,10 +538,13 @@
                 }
             },
             startContext: function() { 
-                if (Tone.context.state !== 'running') Tone.start();
-                // ИЗМЕНЕНО: Проверка isMusicMuted
+                if (Tone.context.state !== 'running') {
+                    Tone.start().catch(e => console.warn("Tone.start() failed", e));
+                }
                 if (!this.isMusicMuted && elements.bgMusic.paused) {
-                    elements.bgMusic.play().catch(e => {});
+                    elements.bgMusic.play().catch(e => {
+                        // console.warn("Music autoplay failed", e)
+                    });
                 }
             }
         };
@@ -528,7 +555,12 @@
 
         async function initVK() {
             try {
-                await vkBridge.send('VKWebAppInit'); isVK = true;
+                await vkBridge.send('VKWebAppInit'); 
+                isVK = true;
+
+                // ИЗМЕНЕНО: Пытаемся запустить музыку сразу после инициализации VK
+                // Это может дать права на автовоспроизведение
+                soundManager.startContext();
 
                 vkBridge.subscribe(e => {
                     if (e.detail.type === 'VKWebAppViewHide') {
@@ -538,7 +570,9 @@
                         }
                     }
                     if (e.detail.type === 'VKWebAppViewRestore') {
-                        // ИЗМЕНЕНО: Проверка isMusicMuted
+                        // ИЗМЕНЕНО: При восстановлении приложения, также перезапускаем аудиоконтекст
+                        // Это помогает, если приложение было свернуто надолго
+                        soundManager.startContext();
                         if (wasMusicPlaying && !soundManager.isMusicMuted) {
                            elements.bgMusic.play().catch(e => {});
                         }
@@ -547,7 +581,10 @@
                 });
                 
                 vkBridge.send("VKWebAppShowBannerAd", { banner_location: 'bottom' }).catch(e => {});
-            } catch (error) { isVK = false; }
+            } catch (error) { 
+                isVK = false; 
+                console.warn("VK Bridge init failed", error);
+            }
         }
         
         const tetris = {
@@ -558,7 +595,6 @@
             isActive: false, isPaused: false, isGameOver: false,
             gameLoopTimeout: null, timeCounterInterval: null, 
             pSize: 20, boardHeight: 22, boardWidth: 12, spawnX: 5, spawnY: 0,
-            // ИЗМЕНЕНО: Порог лавины
             avalancheCounter: 0, AVALANCHE_MOVES_THRESHOLD: 6,
             shapes: [
                 [[0,0],[-1,0],[0,-1],[1,-1]],// 0: Z Red
@@ -711,7 +747,17 @@
                 elements.gameOverMenu.classList.add('visible');
                 stats.save(this.gameMode, this.score, this.lines);
                 soundManager.play('gameOver');
-                if(isVK) vkBridge.send('VKWebAppShowNativeAds', {ad_format:'interstitial'}).catch(e=>{});
+                
+                if(isVK) {
+                    // ИЗМЕНЕНО: Добавлен .finally() для перезапуска аудиоконтекста
+                    vkBridge.send('VKWebAppShowNativeAds', {ad_format:'interstitial'})
+                        .catch(e => { /* Ошибка показа рекламы, не страшно */ })
+                        .finally(() => {
+                            // Это гарантирует, что звуки снова заработают
+                            // после закрытия рекламы (или если она не показалась)
+                            soundManager.startContext();
+                        });
+                }
             },
             play: function () {
                 if (this.isGameOver) return;
@@ -786,8 +832,6 @@
                  if (dir === 'D') {
                     if (this.checkMove(this.curX, this.curY + 1, this.curShape)) {
                         this.curY++; this.drawShape();
-                        // ИЗМЕНЕНО: Убран подсчет очков за softDrop
-                        // this.calcScore({ softDrop: 1 }); 
                         clearTimeout(this.gameLoopTimeout); this.startGameLoop();
                     }
                 }
@@ -812,7 +856,7 @@
                 return clearedRows;
             },
             animateAndRemoveRows: function(rows) {
-                // ИЗМЕНЕНО: Отключаем transition, чтобы не конфликтовать с animation
+                // Отключаем transition, чтобы не конфликтовать с animation
                 this.sqs.forEach(sq => { 
                     const [,sqY] = this.getPos(sq); 
                     if (rows.includes(sqY)) {
@@ -825,7 +869,7 @@
                     this.calcScore({ lines: rows.length }); 
                     this.checkLevelUp();
                     if (!this.isGameOver) { this.initShapes(); this.startGameLoop(); }
-                }, 400); 
+                }, 400); // Эта задержка должна совпадать с длительностью CSS-анимации
                 soundManager.play('clear');
             },
             removeRows: function(rows) {
@@ -849,12 +893,11 @@
             
             calcScore: function (args) {
                 if (args.lines) { 
+                    // Это классическая система подсчета очков. Все верно.
                     const lineScores = [0, 40, 100, 300, 1200];
                     this.score += lineScores[args.lines] * this.level; 
                     this.lines += args.lines; 
                 }
-                // ИЗМЕНЕНО: Убран подсчет очков за softDrop
-                // if (args.softDrop) { this.score += args.softDrop; }
                 if (args.bombClear) {
                     this.score += args.bombClear * 10; 
                 }
@@ -893,7 +936,7 @@
                         if(this.board[cY][cX] !== null) { this.board[cY][cX] = null; clearedCount++; }
                     }
                 }
-                // ИЗМЕНЕНО: Отключаем transition
+                // Отключаем transition
                 this.sqs.forEach(sq => { 
                     const [sqX, sqY] = this.getPos(sq); 
                     if (blastCoords.some(c => c.x === sqX && c.y === sqY)) {
@@ -914,7 +957,7 @@
                     }
 
                     this.initShapes(); this.startGameLoop();
-                }, 400); 
+                }, 400); // Эта задержка должна совпадать с длительностью CSS-анимации
             }
         };
 
@@ -965,6 +1008,8 @@
             soundManager.init();
             elements.bgMusic.volume = 0.3; 
             
+            // ИЗМЕНЕНО: Этот клик по-прежнему нужен как запасной вариант,
+            // если vkBridge.send('VKWebAppInit') не дал прав на автозапуск
             document.body.addEventListener('click', () => soundManager.startContext(), { once: true });
 
             elements.mainMenu.addEventListener('click', (e) => {
@@ -1018,4 +1063,3 @@
     </script>
 </body>
 </html>
-
