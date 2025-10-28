@@ -182,17 +182,16 @@
         }
         .square.blinking { animation: blink 0.8s infinite; }
 
-        /* ИЗМЕНЕНО: Более плавная и заметная анимация очистки линии */
+        /* ИЗМЕНЕНО: Анимация очистки линии по твоему примеру 'Тетрис исчезновение.docx' */
         @keyframes line-clear-anim {
-            0%   { transform: scale(1) rotate(0deg); opacity: 1; }
-            20%  { transform: scale(1.15) rotate(5deg); background-color: #fff; box-shadow: 0 0 25px #fff; }
-            100% { transform: scale(0) rotate(-10deg); opacity: 0; }
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0; transform: scale(0.5); }
         }
         
-        /* ИЗМЕНЕНО: Более "взрывная" анимация бомбы */
+        /* ИЗМЕНЕНО: Анимация бомбы - такой же эффект, как у линии */
         @keyframes bomb-clear-anim {
-            0%   { transform: scale(1); opacity: 1; border-radius: 4px; }
-            100% { transform: scale(5.5); opacity: 0; border-radius: 50%; } 
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0; transform: scale(0.5); } 
         }
         
         @keyframes blink { 50% { opacity: 0.4; } }
@@ -495,13 +494,15 @@
                 
                 // Настройка SFX
                 const savedSfxMute = localStorage.getItem('tetrisSfxMuted');
-                this.isSfxMuted = savedSfxMute !== 'false';
+                // ИЗМЕНЕНО: Звуки включены по умолчанию (false), если в хранилище не 'true'
+                this.isSfxMuted = savedSfxMute === 'true';
                 elements.sfxToggle.checked = !this.isSfxMuted;
                 elements.sfxToggle.addEventListener('change', () => this.toggleSfxMute());
                 
                 // Настройка Музыки
                 const savedMusicMute = localStorage.getItem('tetrisMusicMuted');
-                this.isMusicMuted = savedMusicMute !== 'false';
+                // ИЗМЕНЕНО: Музыка включена по умолчанию (false), если в хранилище не 'true'
+                this.isMusicMuted = savedMusicMute === 'true';
                 elements.musicToggle.checked = !this.isMusicMuted;
                 elements.musicToggle.addEventListener('change', () => this.toggleMusicMute());
             },
@@ -1067,4 +1068,5 @@
     </script>
 </body>
 </html>
+
 
