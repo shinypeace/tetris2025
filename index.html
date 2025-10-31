@@ -13,7 +13,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         /* ========================================
-        Новый Дизайн "Тетрис" v5.7 - Фикс Анимаций и Автозапуска
+        Дизайн "Тетрис" v5.8 - Фикс Анимаций (по примеру "Григ")
         ======================================== */
         :root {
             --bg-gradient-start: #1e1349;
@@ -164,35 +164,33 @@
             height: 20px;
             box-sizing: border-box;
             border-radius: 4px;
-            /* Анимация (transition) будет конфликтовать с animation, отключаем ее в JS */
+            /* Анимация (transition) для движения блоков */
             transition: opacity 0.2s, transform 0.2s, top 0.08s linear, left 0.08s linear;
             box-shadow: inset 0 0 5px rgba(0,0,0,0.4);
             border: 1px solid rgba(0,0,0,0.3);
         }
         .square.ghost { background-color: transparent !important; box-shadow: none; border: 2px solid var(--ghost-color); }
         
-        /* ИЗМЕНЕНИЕ: Новая анимация */
+        /* ИЗМЕНЕНИЕ: Применение анимации из "Тетрис Григ" */
         .square.line-clear { 
-            animation: clear-anim 0.3s ease-in forwards;
+            animation: clear-effect 0.3s ease-out;
             transform-origin: center;
         }
         .square.bomb-clear { 
-            animation: clear-anim 0.3s ease-in forwards;
+            animation: clear-effect 0.3s ease-out;
             transform-origin: center;
         }
         .square.blinking { animation: blink 0.8s infinite; }
 
-        /* ИЗМЕНЕНИЕ: Удалены старые @keyframes line-clear-anim и bomb-clear-anim */
-        
-        /* ИЗМЕНЕНИЕ: Новая, единая и плавная анимация исчезновения */
-        @keyframes clear-anim {
-            0% {
-                opacity: 1;
-                transform: scale(1) rotate(0deg);
+        /* ИЗМЕНЕНИЕ: Анимация 1-в-1 как в "Тетрис Григ" (названа clear-effect) */
+        @keyframes clear-effect {
+            0%, 100% { 
+                opacity: 1; 
+                transform: scale(1); 
             }
-            100% {
-                opacity: 0;
-                transform: scale(0.3) rotate(90deg);
+            50% { 
+                opacity: 0; 
+                transform: scale(0.5); 
             }
         }
         
@@ -483,16 +481,12 @@
                 this.synths.pause = new Tone.Synth({ oscillator: { type: 'sine', volume: -12 }, envelope: { attack: 0.01, decay: 0.1, sustain: 0.1, release: 0.1 } }).toDestination();
                 this.synths.click = new Tone.Synth({ oscillator: { type: "sine", volume: -15 }, envelope: { attack: 0.001, decay: 0.1, sustain: 0, release: 0.1 } }).toDestination();
                 
-                // Настройка SFX
                 const savedSfxMute = localStorage.getItem('tetrisSfxMuted');
-                // ИЗМЕНЕНО: Звуки включены по умолчанию (false), если в хранилище не 'true'
                 this.isSfxMuted = savedSfxMute === 'true';
                 elements.sfxToggle.checked = !this.isSfxMuted;
                 elements.sfxToggle.addEventListener('change', () => this.toggleSfxMute());
                 
-                // Настройка Музыки
                 const savedMusicMute = localStorage.getItem('tetrisMusicMuted');
-                // ИЗМЕНЕНО: Музыка включена по умолчанию (false), если в хранилище не 'true'
                 this.isMusicMuted = savedMusicMute === 'true';
                 elements.musicToggle.checked = !this.isMusicMuted;
                 elements.musicToggle.addEventListener('change', () => this.toggleMusicMute());
@@ -518,13 +512,11 @@
             },
             toggleSfxMute: function() {
                 this.isSfxMuted = !elements.sfxToggle.checked;
-                // ИЗМЕНЕНО: Сохраняем 'true'/'false' как строки
                 localStorage.setItem('tetrisSfxMuted', this.isSfxMuted ? 'true' : 'false');
                 if (!this.isSfxMuted) this.startContext();
             },
             toggleMusicMute: function() {
                 this.isMusicMuted = !elements.musicToggle.checked;
-                // ИЗМЕНЕНО: Сохраняем 'true'/'false' как строки
                 localStorage.setItem('tetrisMusicMuted', this.isMusicMuted ? 'true' : 'false');
                 if (!this.isMusicMuted) {
                     this.startContext();
@@ -552,7 +544,6 @@
             try {
                 await vkBridge.send('VKWebAppInit'); 
                 isVK = true;
-                // ИЗМЕНЕНИЕ: Вызов startContext() теперь здесь, после того как soundManager.init() был вызван
                 soundManager.startContext();
                 vkBridge.subscribe(e => {
                     if (e.detail.type === 'VKWebAppViewHide') {
@@ -847,8 +838,7 @@
                 this.sqs.forEach(sq => { 
                     const [,sqY] = this.getPos(sq); 
                     if (rows.includes(sqY)) {
-                        // --- ИЗМЕНЕНИЕ: Отключаем transition, чтобы работала animation ---
-                        sq.style.transition = 'none'; 
+                        // ИЗМЕНЕНИЕ: Убрана строка 'sq.style.transition = 'none';'
                         sq.classList.add('line-clear'); 
                     }
                 });
@@ -928,8 +918,7 @@
                 this.sqs.forEach(sq => { 
                     const [sqX, sqY] = this.getPos(sq); 
                     if (blastCoords.some(c => c.x === sqX && c.y === sqY)) {
-                        // --- ИЗМЕНЕНИЕ: Отключаем transition, чтобы работала animation ---
-                        sq.style.transition = 'none';
+                        // ИЗМЕНЕНИЕ: Убрана строка 'sq.style.transition = 'none';'
                         sq.classList.add('bomb-clear'); 
                     }
                 });
@@ -993,16 +982,12 @@
         }
 
         async function initApp() {
-            // --- ИЗМЕНЕНИЕ: Сначала инициализируем настройки звука и статистику ---
             await stats.load();
             soundManager.init();
-            // --- КОНЕЦ ИЗМЕНЕНИЯ ---
-
-            await initVK(); // Теперь initVK() вызовет startContext() с правильными настройками
+            await initVK(); 
             
             elements.bgMusic.volume = 0.3; 
             
-            // Этот слушатель все еще нужен на случай, если автозапуск не сработает
             document.body.addEventListener('click', () => soundManager.startContext(), { once: true });
 
             elements.mainMenu.addEventListener('click', (e) => {
@@ -1056,3 +1041,4 @@
     </script>
 </body>
 </html>
+
