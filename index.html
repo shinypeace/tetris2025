@@ -13,7 +13,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         /* ========================================
-        Новый Дизайн "Тетрис" v5.6 - Фикс анимаций
+        Новый Дизайн "Тетрис" v5.7 - Фикс Анимаций и Автозапуска
         ======================================== */
         :root {
             --bg-gradient-start: #1e1349;
@@ -164,34 +164,36 @@
             height: 20px;
             box-sizing: border-box;
             border-radius: 4px;
-            /* Анимация (transition) теперь будет отключаться во время спецэффектов */
+            /* Анимация (transition) будет конфликтовать с animation, отключаем ее в JS */
             transition: opacity 0.2s, transform 0.2s, top 0.08s linear, left 0.08s linear;
             box-shadow: inset 0 0 5px rgba(0,0,0,0.4);
             border: 1px solid rgba(0,0,0,0.3);
         }
         .square.ghost { background-color: transparent !important; box-shadow: none; border: 2px solid var(--ghost-color); }
+        
+        /* ИЗМЕНЕНИЕ: Новая анимация */
         .square.line-clear { 
-            /* ИЗМЕНЕНО: Длительность анимации 0.3s */
-            animation: line-clear-anim 0.3s ease-out forwards;
+            animation: clear-anim 0.3s ease-in forwards;
             transform-origin: center;
         }
         .square.bomb-clear { 
-            /* ИЗМЕНЕНО: Длительность анимации 0.3s */
-            animation: bomb-clear-anim 0.3s ease-out forwards;
+            animation: clear-anim 0.3s ease-in forwards;
             transform-origin: center;
         }
         .square.blinking { animation: blink 0.8s infinite; }
 
-        /* ИЗМЕНЕНО: Анимация очистки линии 1-в-1 из твоего примера */
-        @keyframes line-clear-anim {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0; transform: scale(0.5); }
-        }
+        /* ИЗМЕНЕНИЕ: Удалены старые @keyframes line-clear-anim и bomb-clear-anim */
         
-        /* ИЗМЕНЕНО: Анимация бомбы - такой же эффект, как у линии */
-        @keyframes bomb-clear-anim {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0; transform: scale(0.5); } 
+        /* ИЗМЕНЕНИЕ: Новая, единая и плавная анимация исчезновения */
+        @keyframes clear-anim {
+            0% {
+                opacity: 1;
+                transform: scale(1) rotate(0deg);
+            }
+            100% {
+                opacity: 0;
+                transform: scale(0.3) rotate(90deg);
+            }
         }
         
         @keyframes blink { 50% { opacity: 0.4; } }
@@ -550,6 +552,7 @@
             try {
                 await vkBridge.send('VKWebAppInit'); 
                 isVK = true;
+                // ИЗМЕНЕНИЕ: Вызов startContext() теперь здесь, после того как soundManager.init() был вызван
                 soundManager.startContext();
                 vkBridge.subscribe(e => {
                     if (e.detail.type === 'VKWebAppViewHide') {
@@ -841,14 +844,15 @@
                 return clearedRows;
             },
             animateAndRemoveRows: function(rows) {
-                // ИЗМЕНЕНО: Удалена строка sq.style.transition = 'all 0s linear';
                 this.sqs.forEach(sq => { 
                     const [,sqY] = this.getPos(sq); 
                     if (rows.includes(sqY)) {
+                        // --- ИЗМЕНЕНИЕ: Отключаем transition, чтобы работала animation ---
+                        sq.style.transition = 'none'; 
                         sq.classList.add('line-clear'); 
                     }
                 });
-                // ИЗМЕНЕНО: Таймер 300ms, чтобы соответствовать анимации
+                // Таймер 300ms, чтобы соответствовать анимации
                 setTimeout(() => {
                     this.removeRows(rows); 
                     this.calcScore({ lines: rows.length }); 
@@ -920,15 +924,17 @@
                         if(this.board[cY][cX] !== null) { this.board[cY][cX] = null; clearedCount++; }
                     }
                 }
-                // ИЗМЕНЕНО: Удалена строка sq.style.transition = 'all 0s linear';
+                
                 this.sqs.forEach(sq => { 
                     const [sqX, sqY] = this.getPos(sq); 
                     if (blastCoords.some(c => c.x === sqX && c.y === sqY)) {
+                        // --- ИЗМЕНЕНИЕ: Отключаем transition, чтобы работала animation ---
+                        sq.style.transition = 'none';
                         sq.classList.add('bomb-clear'); 
                     }
                 });
                 soundManager.play('bomb');
-                // ИЗМЕНЕНО: Таймер 300ms, чтобы соответствовать анимации
+                // Таймер 300ms, чтобы соответствовать анимации
                 setTimeout(() => {
                     this.redrawAllBlocks(); this.calcScore({ bombClear: clearedCount });
 
@@ -987,11 +993,16 @@
         }
 
         async function initApp() {
-            await initVK();
+            // --- ИЗМЕНЕНИЕ: Сначала инициализируем настройки звука и статистику ---
             await stats.load();
             soundManager.init();
+            // --- КОНЕЦ ИЗМЕНЕНИЯ ---
+
+            await initVK(); // Теперь initVK() вызовет startContext() с правильными настройками
+            
             elements.bgMusic.volume = 0.3; 
             
+            // Этот слушатель все еще нужен на случай, если автозапуск не сработает
             document.body.addEventListener('click', () => soundManager.startContext(), { once: true });
 
             elements.mainMenu.addEventListener('click', (e) => {
@@ -1045,4 +1056,3 @@
     </script>
 </body>
 </html>
-
