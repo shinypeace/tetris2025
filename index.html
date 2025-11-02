@@ -4,16 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Тетрис</title>
-    <!-- VK Bridge -->
-    <script src="https://unpkg.com/@vkontakte/vk-bridge/dist/browser.min.js"></script>
-    <!-- Tone.js for Sound -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <!-- VK Bridge --><script src="https://unpkg.com/@vkontakte/vk-bridge/dist/browser.min.js"></script>
+    <!-- Tone.js for Sound --><script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         /* ========================================
-        Дизайн "Тетрис" v5.8 - Фикс Анимаций (по примеру "Григ")
+        Новый Дизайн "Тетрис" v5.7 - Фикс Анимаций и Автозапуска
         ======================================== */
         :root {
             --bg-gradient-start: #1e1349;
@@ -164,34 +162,33 @@
             height: 20px;
             box-sizing: border-box;
             border-radius: 4px;
-            /* Анимация (transition) для движения блоков */
-            transition: opacity 0.2s, transform 0.2s, top 0.08s linear, left 0.08s linear;
+            /* ИЗМЕНЕНИЕ: Убраны opacity и transform, чтобы они не конфликтовали с animation */
+            transition: top 0.08s linear, left 0.08s linear;
             box-shadow: inset 0 0 5px rgba(0,0,0,0.4);
             border: 1px solid rgba(0,0,0,0.3);
         }
         .square.ghost { background-color: transparent !important; box-shadow: none; border: 2px solid var(--ghost-color); }
         
-        /* ИЗМЕНЕНИЕ: Применение анимации из "Тетрис Григ" */
-        .square.line-clear { 
-            animation: clear-effect 0.3s ease-out;
-            transform-origin: center;
+        /* Новые анимации */
+        .square.fade-out-line { 
+            animation: fadeOutLine 0.4s ease-out forwards;
+            transform-origin: center center;
         }
-        .square.bomb-clear { 
-            animation: clear-effect 0.3s ease-out;
-            transform-origin: center;
+        .square.bomb-blast { 
+            animation: bombBlast 0.3s ease-out forwards;
+            transform-origin: center center;
         }
         .square.blinking { animation: blink 0.8s infinite; }
 
-        /* ИЗМЕНЕНИЕ: Анимация 1-в-1 как в "Тетрис Григ" (названа clear-effect) */
-        @keyframes clear-effect {
-            0%, 100% { 
-                opacity: 1; 
-                transform: scale(1); 
-            }
-            50% { 
-                opacity: 0; 
-                transform: scale(0.5); 
-            }
+        @keyframes fadeOutLine {
+            0% { opacity: 1; transform: scale(1) translateX(0px); }
+            50% { opacity: 0.8; transform: scale(0.8) translateX(var(--translate-x)); }
+            100% { opacity: 0; transform: scale(0) translateX(var(--translate-x)); }
+        }
+
+        @keyframes bombBlast {
+            0% { opacity: 1; transform: scale(1); }
+            100% { opacity: 0; transform: scale(0.2); }
         }
         
         @keyframes blink { 50% { opacity: 0.4; } }
@@ -481,13 +478,15 @@
                 this.synths.pause = new Tone.Synth({ oscillator: { type: 'sine', volume: -12 }, envelope: { attack: 0.01, decay: 0.1, sustain: 0.1, release: 0.1 } }).toDestination();
                 this.synths.click = new Tone.Synth({ oscillator: { type: "sine", volume: -15 }, envelope: { attack: 0.001, decay: 0.1, sustain: 0, release: 0.1 } }).toDestination();
                 
+                // Настройка SFX
                 const savedSfxMute = localStorage.getItem('tetrisSfxMuted');
-                this.isSfxMuted = savedSfxMute === 'true';
+                this.isSfxMuted = savedSfxMute === 'true'; // Загружаем состояние из localStorage
                 elements.sfxToggle.checked = !this.isSfxMuted;
                 elements.sfxToggle.addEventListener('change', () => this.toggleSfxMute());
                 
+                // Настройка Музыки
                 const savedMusicMute = localStorage.getItem('tetrisMusicMuted');
-                this.isMusicMuted = savedMusicMute === 'true';
+                this.isMusicMuted = savedMusicMute === 'true'; // Загружаем состояние из localStorage
                 elements.musicToggle.checked = !this.isMusicMuted;
                 elements.musicToggle.addEventListener('change', () => this.toggleMusicMute());
             },
@@ -544,7 +543,7 @@
             try {
                 await vkBridge.send('VKWebAppInit'); 
                 isVK = true;
-                soundManager.startContext();
+                soundManager.startContext(); // Запускаем контекст Tone и музыку после инициализации VK
                 vkBridge.subscribe(e => {
                     if (e.detail.type === 'VKWebAppViewHide') {
                         if (!elements.bgMusic.paused) {
@@ -635,7 +634,10 @@
                     [baseShapes[k], baseShapes[j]] = [baseShapes[j], baseShapes[k]];
                 }
                 if (this.gameMode === 'demolition') {
-                    baseShapes.splice(Math.floor(Math.random() * baseShapes.length), 0, 7);
+                    // Добавление бомбы: 10% шанс, что вместо одной из фигур будет бомба
+                    if (Math.random() < 0.2) { // Шанс 20%
+                        baseShapes.splice(Math.floor(Math.random() * baseShapes.length), 0, 7);
+                    }
                 }
                 this.tempShapes.push(...baseShapes);
             },
@@ -835,21 +837,30 @@
                 return clearedRows;
             },
             animateAndRemoveRows: function(rows) {
+                const squaresToRemove = [];
                 this.sqs.forEach(sq => { 
-                    const [,sqY] = this.getPos(sq); 
+                    const [sqX, sqY] = this.getPos(sq); 
                     if (rows.includes(sqY)) {
-                        // ИЗМЕНЕНИЕ: Убрана строка 'sq.style.transition = 'none';'
-                        sq.classList.add('line-clear'); 
+                        squaresToRemove.push(sq);
+                        // Добавляем класс анимации и случайное смещение
+                        // Важно: random() < 0.5 будет смещать влево/вправо примерно одинаково
+                        sq.style.setProperty('--translate-x', `${(Math.random() < 0.5 ? -1 : 1) * (Math.random() * 80 + 20)}px`); // От 20 до 100px
+                        sq.classList.add('fade-out-line');
+                        // Небольшая случайная задержка для каждого блока
+                        sq.style.animationDelay = `${Math.random() * 0.15}s`; 
                     }
                 });
-                // Таймер 300ms, чтобы соответствовать анимации
+                
+                soundManager.play('clear');
+                
+                // Таймер 400ms, чтобы соответствовать анимации fadeOutLine
                 setTimeout(() => {
+                    squaresToRemove.forEach(sq => sq.remove()); // Удаляем блоки после анимации
                     this.removeRows(rows); 
                     this.calcScore({ lines: rows.length }); 
                     this.checkLevelUp();
                     if (!this.isGameOver) { this.initShapes(); this.startGameLoop(); }
-                }, 300); // Эта задержка должна совпадать с длительностью CSS-анимации
-                soundManager.play('clear');
+                }, 400); // Эта задержка должна совпадать с длительностью CSS-анимации
             },
             removeRows: function(rows) {
                 const linesCleared = rows.length;
@@ -893,10 +904,10 @@
             triggerAvalanche: function() {
                 if (this.isPaused || this.isGameOver) return false;
                 this.board.shift();
-                const newRow = Array(this.boardWidth).fill(8);
-                newRow[Math.floor(Math.random()*this.boardWidth)] = null;
+                const newRow = Array(this.boardWidth).fill(8); // 8 - тип блока лавины
+                newRow[Math.floor(Math.random()*this.boardWidth)] = null; // Одна случайная пустая ячейка
                 this.board.push(newRow);
-                if (this.board[0].some(c => c !== null)) { 
+                if (this.board[0].some(c => c !== null)) { // Если лавина достигла верха
                     this.redrawAllBlocks(); 
                     this.gameOver(); 
                     return true; 
@@ -906,26 +917,38 @@
             },
 
             detonateBomb: function(x,y) {
-                this.removeSqs(this.curSqs); let clearedCount = 0; const blastCoords = [];
-                for(let i = -1; i <= 1; i++) for(let j = -1; j <= 1; j++) {
-                    const cX=x+j, cY=y+i;
-                    if(cY>=0&&cY<this.boardHeight&&cX>=0&&cX<this.boardWidth){
-                        blastCoords.push({x: cX, y: cY});
-                        if(this.board[cY][cX] !== null) { this.board[cY][cX] = null; clearedCount++; }
+                this.removeSqs(this.curSqs); 
+                let clearedCount = 0; 
+                const blastCoords = [];
+                const squaresToAnimate = [];
+
+                for(let i = -1; i <= 1; i++) {
+                    for(let j = -1; j <= 1; j++) {
+                        const cX=x+j, cY=y+i;
+                        if(cY>=0&&cY<this.boardHeight&&cX>=0&&cX<this.boardWidth){
+                            blastCoords.push({x: cX, y: cY});
+                            if(this.board[cY][cX] !== null) { 
+                                this.board[cY][cX] = null; 
+                                clearedCount++; 
+                            }
+                        }
                     }
                 }
                 
                 this.sqs.forEach(sq => { 
                     const [sqX, sqY] = this.getPos(sq); 
                     if (blastCoords.some(c => c.x === sqX && c.y === sqY)) {
-                        // ИЗМЕНЕНИЕ: Убрана строка 'sq.style.transition = 'none';'
-                        sq.classList.add('bomb-clear'); 
+                        squaresToAnimate.push(sq);
+                        sq.classList.add('bomb-blast'); 
+                        sq.style.animationDelay = `${Math.random() * 0.1}s`; // Небольшая случайная задержка
                     }
                 });
                 soundManager.play('bomb');
-                // Таймер 300ms, чтобы соответствовать анимации
+                
                 setTimeout(() => {
-                    this.redrawAllBlocks(); this.calcScore({ bombClear: clearedCount });
+                    squaresToAnimate.forEach(sq => sq.remove()); // Удаляем блоки после анимации
+                    this.redrawAllBlocks(); 
+                    this.calcScore({ bombClear: clearedCount });
 
                     if (this.gameMode === 'avalanche') {
                         this.avalancheCounter++;
@@ -935,8 +958,9 @@
                         }
                     }
 
-                    this.initShapes(); this.startGameLoop();
-                }, 300); // Эта задержка должна совпадать с длительностью CSS-анимации
+                    this.initShapes(); 
+                    this.startGameLoop();
+                }, 300); // Длительность анимации bombBlast
             }
         };
 
@@ -984,7 +1008,7 @@
         async function initApp() {
             await stats.load();
             soundManager.init();
-            await initVK(); 
+            await initVK();
             
             elements.bgMusic.volume = 0.3; 
             
@@ -1041,4 +1065,5 @@
     </script>
 </body>
 </html>
+
 
