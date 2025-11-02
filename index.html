@@ -163,7 +163,13 @@
             box-sizing: border-box;
             border-radius: 4px;
             /* ИЗМЕНЕНИЕ: Убраны opacity и transform, чтобы они не конфликтовали с animation */
-            transition: top 0.08s linear, left 0.08s linear;
+            
+            /* FIX: Эта строка 'transition' не используется вашим JS (т.к. вы пересоздаете
+              квадраты, а не двигаете их) и конфликтует с 'animation' в .fade-out-line.
+              Удаление этой строки чинит анимацию исчезновения линии.
+            */
+            /* transition: top 0.08s linear, left 0.08s linear; */
+
             box-shadow: inset 0 0 5px rgba(0,0,0,0.4);
             border: 1px solid rgba(0,0,0,0.3);
         }
@@ -1065,5 +1071,3 @@
     </script>
 </body>
 </html>
-
-
