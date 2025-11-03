@@ -483,8 +483,9 @@
                 this.synths.reverb.wet.value = 0.4; 
                 this.synths.drop = new Tone.MembraneSynth({ pitchDecay: 0.01, octaves: 6, oscillator: { type: "sine", volume: -10 }, envelope: { attack: 0.001, decay: 0.2, sustain: 0.01, release: 0.1 } }).toDestination();
                 this.synths.clear = new Tone.PolySynth(Tone.Synth, { 
-                    oscillator: { type: "fmsine", volume: -10 }, 
-                    envelope: { attack: 0.01, decay: 0.3, sustain: 0.1, release: 0.4 } 
+                    /* ИЗМЕНЕНИЕ ЗВУКА: делаем "поприятнее" */
+                    oscillator: { type: "fatsine", volume: -14 }, 
+                    envelope: { attack: 0.01, decay: 0.3, sustain: 0.1, release: 0.6 } 
                 }).connect(this.synths.reverb);
                 this.synths.gameOver = new Tone.PolySynth(Tone.Synth, { 
                     oscillator: { type: 'triangle', volume: -8 }, 
@@ -895,7 +896,10 @@
                 // длительность transition (400ms) + макс. задержку (150ms) + reflow (10ms)
                 setTimeout(() => {
                     squaresToRemove.forEach(sq => sq.remove()); // Удаляем блоки после анимации
-                    this.removeRows(rows); 
+                    this.removeRows(rows); // ВЫЗЫВАЕМ removeRows (который БОЛЬШЕ не перерисовывает)
+                    
+                    this.redrawAllBlocks(); // <-- И ПЕРЕРИСОВЫВАЕМ ПОЛЕ ЗДЕСЬ, ПОСЛЕ ОБНОВЛЕНИЯ ДАННЫХ
+
                     this.calcScore({ lines: rows.length }); 
                     this.checkLevelUp();
                     if (!this.isGameOver) { this.initShapes(); this.startGameLoop(); }
@@ -907,7 +911,7 @@
                 for (let i = 0; i < linesCleared; i++) {
                     this.board.unshift(Array(this.boardWidth).fill(null));
                 }
-                this.redrawAllBlocks();
+                // this.redrawAllBlocks(); // <-- ГЛАВНЫЙ ФИКС: УДАЛЯЕМ ЭТУ СТРОКУ
             },
             redrawAllBlocks: function() {
                 this.removeSqs(this.sqs); this.sqs = [];
@@ -1104,5 +1108,6 @@
     </script>
 </body>
 </html>
+
 
 
