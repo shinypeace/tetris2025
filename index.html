@@ -868,22 +868,38 @@
                         // Добавляем класс анимации и случайное смещение
                         // Важно: random() < 0.5 будет смещать влево/вправо примерно одинаково
                         sq.style.setProperty('--translate-x', `${(Math.random() < 0.5 ? -1 : 1) * (Math.random() * 80 + 20)}px`); // От 20 до 100px
+                        
+                        /*
+                        // УБИРАЕМ ДОБАВЛЕНИЕ КЛАССА ОТСЮДА
                         sq.classList.add('fade-out-line');
-                        // Небольшая случайная задержка для каждого блока
+                        // И УБИРАЕМ УСТАНОВКУ ЗАДЕРЖКИ
                         sq.style.animationDelay = `${Math.random() * 0.15}s`; 
+                        */
                     }
                 });
                 
                 soundManager.play('clear');
+
+                // FIX 1: Даем браузеру 10мс (один кадр) на отрисовку блоков
+                // перед тем, как запустить анимацию исчезновения.
+                setTimeout(() => {
+                    squaresToRemove.forEach(sq => {
+                        // FIX 2: Используем 'transitionDelay', а не 'animationDelay', 
+                        // так как мы используем CSS transition.
+                        sq.style.transitionDelay = `${Math.random() * 0.15}s`;
+                        sq.classList.add('fade-out-line');
+                    });
+                }, 10); // 10мс задержка для reflow
                 
-                // Таймер 400ms, чтобы соответствовать анимации fadeOutLine
+                // FIX 3: Увеличиваем общую задержку, чтобы учесть 
+                // длительность transition (400ms) + макс. задержку (150ms) + reflow (10ms)
                 setTimeout(() => {
                     squaresToRemove.forEach(sq => sq.remove()); // Удаляем блоки после анимации
                     this.removeRows(rows); 
                     this.calcScore({ lines: rows.length }); 
                     this.checkLevelUp();
                     if (!this.isGameOver) { this.initShapes(); this.startGameLoop(); }
-                }, 400); // Эта задержка должна совпадать с длительностью CSS-анимации
+                }, 560); // 400ms (transition) + 150ms (max delay) + 10ms (reflow) = 560ms
             },
             removeRows: function(rows) {
                 const linesCleared = rows.length;
@@ -1088,4 +1104,5 @@
     </script>
 </body>
 </html>
+
 
