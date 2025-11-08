@@ -755,7 +755,7 @@
                 this.VK_STORAGE_KEY = 'BubbleStackStats';
                 
                 this.stage = new Stage();
-                this.sounds = this.initSounds();
+                this.sounds = null; // <-- ИЗМЕНЕНО: Инициализируем как null, а не this.initSounds()
                 
                 // Настройки
                 this.settings = {
@@ -883,34 +883,51 @@
                 this.tick();
             }
             
-            initSounds() {
-                // Создаем синтезаторы Tone.js
-                return {
-                    click: new Tone.Synth({
-                        oscillator: { type: "sine" },
-                        envelope: { attack: 0.01, decay: 0.1, sustain: 0, release: 0.1 }
-                    }).toDestination(),
-                    perfect: new Tone.Synth({
-                        oscillator: { type: "triangle" },
-                        envelope: { attack: 0.01, decay: 0.2, sustain: 0, release: 0.2 }
-                    }).toDestination(),
-                    fail: new Tone.Synth({
-                        oscillator: { type: "square" },
-                        envelope: { attack: 0.01, decay: 0.4, sustain: 0, release: 0.2 }
-                    }).toDestination()
-                };
-            }
+            /* Я УДАЛИЛ ВСЮ ФУНКЦИЮ initSounds() ОТСЮДА.
+               Она больше не нужна.
+            */
 
             // --- Звуки и Вибрация ---
             playSound(sound) {
                 if (!this.settings.sound) return;
+
                 try {
+                    // --- НОВАЯ ЛОГИКА ИНИЦИАЛИЗАЦИИ ---
+                    // Инициализируем звуки при первом вызове
+                    if (!this.sounds) {
+                        // Проверяем, загрузился ли Tone
+                        if (typeof Tone === 'undefined' || !Tone.Synth) {
+                            console.error("Tone.js не загружен. Звуки не будут работать.");
+                            this.settings.sound = false; // Отключаем звук, чтобы не было ошибок
+                            return;
+                        }
+                        
+                        this.sounds = {
+                            click: new Tone.Synth({
+                                oscillator: { type: "sine" },
+                                envelope: { attack: 0.01, decay: 0.1, sustain: 0, release: 0.1 }
+                            }).toDestination(),
+                            perfect: new Tone.Synth({
+                                oscillator: { type: "triangle" },
+                                envelope: { attack: 0.01, decay: 0.2, sustain: 0, release: 0.2 }
+                            }).toDestination(),
+                            fail: new Tone.Synth({
+                                oscillator: { type: "square" },
+                                envelope: { attack: 0.01, decay: 0.4, sustain: 0, release: 0.2 }
+                            }).toDestination()
+                        };
+                        console.log("Звуки Tone.js инициализированы.");
+                    }
+                    // --- КОНЕЦ НОВОЙ ЛОГИКИ ---
+
                     Tone.start();
                     if (sound === 'click') this.sounds.click.triggerAttackRelease("C5", "8n");
                     if (sound === 'perfect') this.sounds.perfect.triggerAttackRelease("G5", "8n");
                     if (sound === 'fail') this.sounds.fail.triggerAttackRelease("C3", "4n");
                 } catch (e) {
                     console.error("Tone.js error:", e);
+                    // Если что-то пошло не так, отключаем звук
+                    this.settings.sound = false;
                 }
             }
             
