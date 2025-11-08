@@ -215,7 +215,7 @@
             text-shadow: 0 2px 5px rgba(0,0,0,0.15);
             gap: 10px;
         }
-        #in-game-stats-levels, #in-game-stats-timewarp {
+        #in-game-stats-blitz, #in-game-stats-precision {
             background: rgba(0,0,0,0.1);
             padding: 8px 12px; /* Уменьшил */
             border-radius: 12px;
@@ -226,12 +226,15 @@
             align-items: center;
             line-height: 1.3;
         }
-        #in-game-stats-levels span, #in-game-stats-timewarp span {
+        #in-game-stats-blitz span, #in-game-stats-precision span {
             font-size: 0.9rem;
             font-weight: 400;
         }
-        #in-game-stats-timewarp {
-            min-width: 80px;
+        #in-game-stats-blitz {
+            color: var(--danger);
+        }
+         #in-game-stats-precision {
+            color: var(--secondary);
         }
         
         #perfect-placement-text {
@@ -336,6 +339,41 @@
             line-height: 1.2;
         }
         
+        /* --- Новая Сетка Статистики --- */
+        #stats-modal h2 {
+            text-align: center;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 1.5rem 1rem;
+            text-align: left;
+            margin: 1.5rem 0;
+        }
+        .stats-grid span {
+            font-size: 1.1rem;
+            color: var(--text-light);
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+        }
+        .stats-grid strong {
+            font-size: 2rem;
+            font-weight: 900;
+            color: var(--text-dark);
+            text-align: right;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 0.5rem;
+        }
+        .stats-grid strong svg {
+            width: 24px;
+            height: 24px;
+            fill: var(--secondary);
+        }
+        /* --- Конец Сетки Статистики --- */
+
         .settings-row {
             display: flex;
             justify-content: space-between;
@@ -404,6 +442,9 @@
     </style>
 </head>
 <body>
+    <!-- Фоновая музыка -->
+    <audio id="bg-music" loop src="music.mp3"></audio>
+
     <div id="container">
         <!-- Игровое поле Three.js -->
         <div id="game"></div>
@@ -414,8 +455,8 @@
                 <div class="title">BUBBLE<br>STACK</div>
                 <div class="button-group">
                     <button id="start-classic-button" class="button">Классика</button>
-                    <button id="start-levels-button" class="button button-secondary">Уровни</button>
-                    <button id="start-timewarp-button" class="button button-secondary">На время</button>
+                    <button id="start-blitz-button" class="button button-secondary">Блиц</button>
+                    <button id="start-precision-button" class="button button-secondary">Точность</button>
                 </div>
                 <div id="menu-icon-buttons">
                     <button id="rules-button" class="icon-button" aria-label="Правила">
@@ -449,52 +490,68 @@
                 <p><strong>Игровые Режимы:</strong></p>
                  <ul>
                     <li><strong>Классика:</strong> Строй башню как можно выше. Рекорд - твой лучший результат.</li>
-                    <li><strong>Уровни:</strong> Достигни цели по высоте (N блоков), чтобы перейти на следующий уровень.</li>
-                    <li><strong>На время:</strong> Набери максимум очков за 60 секунд. Идеальные попадания добавляют +2 сек.</li>
+                    <li><strong>Блиц:</strong> Скорость блоков увеличивается с каждым этажом. Как высоко ты сможешь зайти, пока не промахнешься?</li>
+                    <li><strong>Точность:</strong> Одно неверное (неидеальное) попадание = конец игры. Проверь свою точность!</li>
                 </ul>
                 <button id="close-rules-button" class="button">Понятно!</button>
             </div>
         </div>
         
-        <!-- --- Модальное: Статистика --- -->
+        <!-- --- Модальное: Статистика (Обновлено) --- -->
         <div id="stats-modal" class="ui-layer modal-background hidden">
             <div class="modal-box">
                 <h2>Статистика</h2>
-                <div class="score-display">
+                
+                <div class="stats-grid">
                     <span>Рекорд (Классика)</span>
-                    <strong id="stats-high-score-classic">0</strong>
+                    <strong>
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 5h-2V3H7v2H5c-1.1 0-2 .9-2 2v1c0 2.55 1.92 4.63 4.39 4.93C7.63 13.6 8 14.47 8 15.4c0 1.99-1.35 3.64-3.13 3.96-1.09.2-1.87 1.17-1.87 2.3v.01C3 21.82 3.18 22 3.5 22h17c.32 0 .5-.18.5-.34v-.01c0-1.13-.78-2.1-1.87-2.3C17.35 19.04 16 17.39 16 15.4c0-.93.37-1.8.9-2.47C19.08 12.63 21 10.55 21 8V7c0-1.1-.9-2-2-2zM5 7h14v1c0 1.95-1.4 3.58-3.23 3.92C15.29 11.96 15 12.45 15 13c0 1.48-.8 2.75-1.92 3.39C12.4 16.74 11.6 17 10.75 17c-.82 0-1.58-.25-2.22-.68C7.41 15.7 6.6 14.43 6.6 13c0-.55.21-1.04.57-1.42C9.6 11.58 11 9.95 11 8V7H5z"/></svg>
+                        <span id="stats-high-score-classic">0</span>
+                    </strong>
+                    
+                    <span>Рекорд (Блиц)</span>
+                    <strong>
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 5h-2V3H7v2H5c-1.1 0-2 .9-2 2v1c0 2.55 1.92 4.63 4.39 4.93C7.63 13.6 8 14.47 8 15.4c0 1.99-1.35 3.64-3.13 3.96-1.09.2-1.87 1.17-1.87 2.3v.01C3 21.82 3.18 22 3.5 22h17c.32 0 .5-.18.5-.34v-.01c0-1.13-.78-2.1-1.87-2.3C17.35 19.04 16 17.39 16 15.4c0-.93.37-1.8.9-2.47C19.08 12.63 21 10.55 21 8V7c0-1.1-.9-2-2-2zM5 7h14v1c0 1.95-1.4 3.58-3.23 3.92C15.29 11.96 15 12.45 15 13c0 1.48-.8 2.75-1.92 3.39C12.4 16.74 11.6 17 10.75 17c-.82 0-1.58-.25-2.22-.68C7.41 15.7 6.6 14.43 6.6 13c0-.55.21-1.04.57-1.42C9.6 11.58 11 9.95 11 8V7H5z"/></svg>
+                        <span id="stats-high-score-blitz">0</span>
+                    </strong>
+                    
+                    <span>Рекорд (Точность)</span>
+                    <strong>
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 5h-2V3H7v2H5c-1.1 0-2 .9-2 2v1c0 2.55 1.92 4.63 4.39 4.93C7.63 13.6 8 14.47 8 15.4c0 1.99-1.35 3.64-3.13 3.96-1.09.2-1.87 1.17-1.87 2.3v.01C3 21.82 3.18 22 3.5 22h17c.32 0 .5-.18.5-.34v-.01c0-1.13-.78-2.1-1.87-2.3C17.35 19.04 16 17.39 16 15.4c0-.93.37-1.8.9-2.47C19.08 12.63 21 10.55 21 8V7c0-1.1-.9-2-2-2zM5 7h14v1c0 1.95-1.4 3.58-3.23 3.92C15.29 11.96 15 12.45 15 13c0 1.48-.8 2.75-1.92 3.39C12.4 16.74 11.6 17 10.75 17c-.82 0-1.58-.25-2.22-.68C7.41 15.7 6.6 14.43 6.6 13c0-.55.21-1.04.57-1.42C9.6 11.58 11 9.95 11 8V7H5z"/></svg>
+                        <span id="stats-high-score-precision">0</span>
+                    </strong>
                 </div>
-                <div class="score-display">
-                    <span>Рекорд (На время)</span>
-                    <strong id="stats-high-score-timewarp">0</strong>
-                </div>
-                 <div class="score-display">
-                    <span>Текущий Уровень</span>
-                    <strong id="stats-current-level">1</strong>
-                </div>
+                
                 <button id="close-stats-button" class="button">Закрыть</button>
             </div>
         </div>
         
-        <!-- --- Модальное: Настройки --- -->
+        <!-- --- Модальное: Настройки (Обновлено) --- -->
         <div id="settings-modal" class="ui-layer modal-background hidden">
             <div class="modal-box">
                 <h2>Настройки</h2>
                 <div class="settings-row">
-                    <span>Звуки</span>
+                    <span>Музыка</span>
                     <label class="toggle-switch">
-                        <input type="checkbox" id="sound-toggle" checked>
+                        <input type="checkbox" id="music-toggle" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="settings-row">
+                    <span>Звуки (SFX)</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="sfx-toggle" checked>
                         <span class="slider"></span>
                     </label>
                 </div>
                 <div class="settings-row">
                     <span>Вибрация</span>
                     <label class="toggle-switch">
-                        <input type="checkbox" id="vibration-toggle" checked>
+                        <input type="checkbox" id="taptic-toggle" checked>
                         <span class="slider"></span>
                     </label>
                 </div>
-                <button id="close-settings-button" class="button">Сохранить</button>
+                <button id="close-settings-button" class="button">Закрыть</button>
             </div>
         </div>
 
@@ -504,13 +561,13 @@
             
             <!-- Динамические статы для режимов -->
             <div id="in-game-stats">
-                 <div id="in-game-stats-levels" class="hidden">
-                    <strong id="level-indicator">Уровень: 1</strong>
-                    <span id="target-indicator">Цель: 10</span>
+                 <div id="in-game-stats-blitz" class="hidden">
+                    <strong id="speed-indicator">x1.0</strong>
+                    <span>Скорость</span>
                 </div>
-                <div id="in-game-stats-timewarp" class="hidden">
-                    <strong id="timer-indicator">01:00</strong>
-                    <span>Время</span>
+                <div id="in-game-stats-precision" class="hidden">
+                    <strong id="strike-indicator">🔥 0</strong>
+                    <span>Идеально</span>
                 </div>
             </div>
             
@@ -751,27 +808,29 @@
         class Game {
             constructor() {
                 this.STATES = { MENU: 'menu', PLAYING: 'playing', PAUSED: 'paused', ENDED: 'ended', RESETTING: 'resetting', LEVEL_COMPLETE: 'level_complete' };
-                this.MODES = { CLASSIC: 'classic', LEVELS: 'levels', TIMEWARP: 'timewarp' };
+                this.MODES = { CLASSIC: 'classic', BLITZ: 'blitz', PRECISION: 'precision' }; // <-- Изменены Режимы
                 this.VK_STORAGE_KEY = 'BubbleStackStats';
                 
                 this.stage = new Stage();
-                this.sounds = null; // <-- ИЗМЕНЕНО: Инициализируем как null, а не this.initSounds()
+                this.sounds = null; 
                 
                 // Настройки
                 this.settings = {
-                    sound: true,
-                    vibration: true
+                    music: true, // <-- Добавлена Музыка
+                    sfx: true,   // <-- Переименовано
+                    taptic: true // <-- Переименовано
                 };
                 
                 // Статистика
                 this.stats = {
                     highScoreClassic: 0,
-                    highScoreTimewarp: 0,
-                    currentLevel: 1
+                    highScoreBlitz: 0,     // <-- Изменено
+                    highScorePrecision: 0  // <-- Изменено
                 };
 
                 // UI Элементы
                 this.ui = {
+                    bgMusic: document.getElementById('bg-music'), // <-- Добавлена Музыка
                     // Меню
                     mainMenu: document.getElementById('main-menu'),
                     pauseMenu: document.getElementById('pause-menu'),
@@ -788,15 +847,14 @@
                     gameCanvas: document.getElementById('game'),
                     // Статистика
                     statsHighScoreClassic: document.getElementById('stats-high-score-classic'),
-                    statsHighScoreTimewarp: document.getElementById('stats-high-score-timewarp'),
-                    statsCurrentLevel: document.getElementById('stats-current-level'),
+                    statsHighScoreBlitz: document.getElementById('stats-high-score-blitz'),       // <-- Изменено
+                    statsHighScorePrecision: document.getElementById('stats-high-score-precision'), // <-- Изменено
                     // Статы в игре
                     inGameStats: document.getElementById('in-game-stats'),
-                    inGameStatsLevels: document.getElementById('in-game-stats-levels'),
-                    levelIndicator: document.getElementById('level-indicator'),
-                    targetIndicator: document.getElementById('target-indicator'),
-                    inGameStatsTimewarp: document.getElementById('in-game-stats-timewarp'),
-                    timerIndicator: document.getElementById('timer-indicator'),
+                    inGameStatsBlitz: document.getElementById('in-game-stats-blitz'),         // <-- Изменено
+                    speedIndicator: document.getElementById('speed-indicator'),           // <-- Изменено
+                    inGameStatsPrecision: document.getElementById('in-game-stats-precision'), // <-- Изменено
+                    strikeIndicator: document.getElementById('strike-indicator'),         // <-- Изменено
                     // Конец игры
                     gameOverTitle: document.getElementById('game-over-title'),
                     finalScore: document.getElementById('final-score'),
@@ -805,16 +863,17 @@
                     // Уровень пройден
                     levelCompleteLevel: document.getElementById('level-complete-level'),
                     // Настройки
-                    soundToggle: document.getElementById('sound-toggle'),
-                    vibrationToggle: document.getElementById('vibration-toggle')
+                    musicToggle: document.getElementById('music-toggle'), // <-- Добавлено
+                    sfxToggle: document.getElementById('sfx-toggle'),     // <-- Изменено
+                    tapticToggle: document.getElementById('taptic-toggle')  // <-- Изменено
                 };
 
                 // Кнопки
                 this.buttons = {
                     // Главное меню
                     startClassic: document.getElementById('start-classic-button'),
-                    startLevels: document.getElementById('start-levels-button'),
-                    startTimewarp: document.getElementById('start-timewarp-button'),
+                    startBlitz: document.getElementById('start-blitz-button'),     // <-- Изменено
+                    startPrecision: document.getElementById('start-precision-button'), // <-- Изменено
                     rules: document.getElementById('rules-button'),
                     stats: document.getElementById('stats-button'),
                     settings: document.getElementById('settings-button'),
@@ -851,11 +910,9 @@
                 this.initialBlockSize = { width: 10, depth: 10 };
                 this.gameMode = this.MODES.CLASSIC;
                 
-                // Переменные для режимов
-                this.currentLevel = 1;
-                this.levelTarget = 0;
-                this.timeLeft = 60;
-                this.gameTimer = null;
+                // Переменные для режимов (старые удалены)
+                this.currentPrecisionStrike = 0;
+                this.currentSpeedMultiplier = 1.0;
 
                 // Анимация фона
                 this.bgColors = {
@@ -883,61 +940,92 @@
                 this.tick();
             }
             
-            /* Я УДАЛИЛ ВСЮ ФУНКЦИЮ initSounds() ОТСЮДА.
-               Она больше не нужна.
-            */
-
-            // --- Звуки и Вибрация ---
-            playSound(sound) {
-                if (!this.settings.sound) return;
+            // --- Новая функция инициализации Аудио ---
+            async initAudio() {
+                if (this.sounds) return; // Уже инициализировано
 
                 try {
-                    // --- НОВАЯ ЛОГИКА ИНИЦИАЛИЗАЦИИ ---
-                    // Инициализируем звуки при первом вызове
-                    if (!this.sounds) {
-                        // Проверяем, загрузился ли Tone
-                        if (typeof Tone === 'undefined' || !Tone.Synth) {
-                            console.error("Tone.js не загружен. Звуки не будут работать.");
-                            this.settings.sound = false; // Отключаем звук, чтобы не было ошибок
-                            return;
-                        }
-                        
-                        this.sounds = {
-                            click: new Tone.Synth({
-                                oscillator: { type: "sine" },
-                                envelope: { attack: 0.01, decay: 0.1, sustain: 0, release: 0.1 }
-                            }).toDestination(),
-                            perfect: new Tone.Synth({
-                                oscillator: { type: "triangle" },
-                                envelope: { attack: 0.01, decay: 0.2, sustain: 0, release: 0.2 }
-                            }).toDestination(),
-                            fail: new Tone.Synth({
-                                oscillator: { type: "square" },
-                                envelope: { attack: 0.01, decay: 0.4, sustain: 0, release: 0.2 }
-                            }).toDestination()
-                        };
-                        console.log("Звуки Tone.js инициализированы.");
+                    // 1. Запускаем аудио контекст по требованию VK
+                    await Tone.start();
+                    console.log("Tone.js AudioContext запущен.");
+                    
+                    // 2. Инициализируем SFX
+                    if (typeof Tone === 'undefined' || !Tone.Synth) {
+                        throw new Error("Tone.js не найден");
                     }
-                    // --- КОНЕЦ НОВОЙ ЛОГИКИ ---
+                    this.sounds = {
+                        click: new Tone.Synth({
+                            oscillator: { type: "sine" },
+                            envelope: { attack: 0.01, decay: 0.1, sustain: 0, release: 0.1 }
+                        }).toDestination(),
+                        perfect: new Tone.Synth({
+                            oscillator: { type: "triangle" },
+                            envelope: { attack: 0.01, decay: 0.2, sustain: 0, release: 0.2 }
+                        }).toDestination(),
+                        fail: new Tone.Synth({
+                            oscillator: { type: "square" },
+                            envelope: { attack: 0.01, decay: 0.4, sustain: 0, release: 0.2 }
+                        }).toDestination(),
+                        ui: new Tone.Synth({ // Звук для кнопок
+                            oscillator: { type: "sine" },
+                            envelope: { attack: 0.005, decay: 0.05, sustain: 0, release: 0.1 }
+                        }).toDestination()
+                    };
+                    console.log("Звуки Tone.js инициализированы.");
 
-                    Tone.start();
+                } catch (e) {
+                    console.error("Ошибка инициализации аудио:", e);
+                    this.settings.sfx = false; // Отключаем SFX, если что-то пошло не так
+                    this.ui.sfxToggle.checked = false;
+                }
+
+                // 3. Управляем музыкой
+                this.toggleMusic();
+            }
+
+            // --- Звуки и Вибрация (Обновлено) ---
+            playSound(sound) {
+                if (!this.settings.sfx || !this.sounds) return; // Проверяем и настройку, и инициализацию
+
+                try {
+                    // Tone.start() теперь в initAudio()
                     if (sound === 'click') this.sounds.click.triggerAttackRelease("C5", "8n");
                     if (sound === 'perfect') this.sounds.perfect.triggerAttackRelease("G5", "8n");
                     if (sound === 'fail') this.sounds.fail.triggerAttackRelease("C3", "4n");
+                    if (sound === 'ui') this.sounds.ui.triggerAttackRelease("A5", "16n");
                 } catch (e) {
                     console.error("Tone.js error:", e);
-                    // Если что-то пошло не так, отключаем звук
-                    this.settings.sound = false;
                 }
             }
             
-            triggerVibration(type = 'short') {
-                if (!this.settings.vibration || !navigator.vibrate) return;
-                if (type === 'short') navigator.vibrate(100);
-                if (type === 'long') navigator.vibrate(300);
+            // --- Новая функция управления музыкой ---
+            toggleMusic() {
+                if (this.settings.music) {
+                    this.ui.bgMusic.play().catch(e => console.warn("Не удалось воспроизвести музыку (возможно, нужно взаимодействие):", e));
+                } else {
+                    this.ui.bgMusic.pause();
+                }
             }
 
-            // --- Интеграция с VK ---
+            // --- Обновленная Вибрация для VK ---
+            triggerVibration(type = 'short') {
+                if (!this.settings.taptic) return; // Проверяем настройку
+                
+                // 'light', 'medium', 'heavy'
+                const style = type === 'short' ? 'light' : (type === 'long' ? 'heavy' : 'medium');
+                
+                if (this.isVK && vkBridge.supports('VKWebAppTapticImpactOccurred')) {
+                    // Используем VK Taptic API
+                    vkBridge.send('VKWebAppTapticImpactOccurred', { style: style })
+                        .catch(e => console.warn("VK Taptic failed:", e));
+                } else if (navigator.vibrate) {
+                    // Запасной вариант (может не работать в iframe)
+                    const duration = type === 'short' ? 50 : (type === 'long' ? 200 : 100);
+                    navigator.vibrate(duration);
+                }
+            }
+
+            // --- Интеграция с VK (без изменений) ---
             async initVK() {
                 try {
                     await vkBridge.send('VKWebAppInit');
@@ -981,33 +1069,27 @@
                 return loadedData ? JSON.parse(loadedData) : null;
             }
             
-            showBannerAd() {
-                if(this.isVK) {
-                    vkBridge.send("VKWebAppShowBannerAd", { banner_location: 'bottom' })
-                        .catch(e => console.warn("Banner Ad Error:", e));
-                }
-            }
-            
-            showInterstitialAd() {
-                 if(this.isVK) {
-                    vkBridge.send('VKWebAppShowNativeAds', { ad_format: 'interstitial' })
-                        .catch(e=>console.warn("Interstitial Ad Error:", e));
-                }
-            }
-            
-            // --- Сохранение/Загрузка Настроек и Статистики ---
+            // --- Сохранение/Загрузка Настроек и Статистики (Обновлено) ---
             
             saveSettings() {
-                this.settings.sound = this.ui.soundToggle.checked;
-                this.settings.vibration = this.ui.vibrationToggle.checked;
-                // (В реальном приложении, мы бы сохраняли это в localStorage или VK Storage)
+                // Сохраняем все настройки
+                this.settings.music = this.ui.musicToggle.checked;
+                this.settings.sfx = this.ui.sfxToggle.checked;
+                this.settings.taptic = this.ui.tapticToggle.checked;
+                
+                // (В реальном приложении, мы бы сохраняли это в localStorage или VK Storage,
+                // но для простоты примера просто держим в памяти)
                 console.log("Настройки сохранены:", this.settings);
             }
             
             loadSettings() {
                 // (В реальном приложении, мы бы загружали это)
-                this.ui.soundToggle.checked = this.settings.sound;
-                this.ui.vibrationToggle.checked = this.settings.vibration;
+                this.ui.musicToggle.checked = this.settings.music;
+                this.ui.sfxToggle.checked = this.settings.sfx;
+                this.ui.tapticToggle.checked = this.settings.taptic;
+
+                // Применяем настройку музыки при загрузке
+                this.toggleMusic();
             }
             
             async saveStats() {
@@ -1018,58 +1100,71 @@
                 const loadedStats = await this.loadData();
                 if (loadedStats) {
                     this.stats.highScoreClassic = loadedStats.highScoreClassic || 0;
-                    this.stats.highScoreTimewarp = loadedStats.highScoreTimewarp || 0;
-                    this.stats.currentLevel = loadedStats.currentLevel || 1;
+                    this.stats.highScoreBlitz = loadedStats.highScoreBlitz || 0;     // <-- Изменено
+                    this.stats.highScorePrecision = loadedStats.highScorePrecision || 0; // <-- Изменено
                 }
             }
             
             updateStatsUI() {
                 this.ui.statsHighScoreClassic.innerText = this.stats.highScoreClassic;
-                this.ui.statsHighScoreTimewarp.innerText = this.stats.highScoreTimewarp;
-                this.ui.statsCurrentLevel.innerText = this.stats.currentLevel;
+                this.ui.statsHighScoreBlitz.innerText = this.stats.highScoreBlitz;
+                this.ui.statsHighScorePrecision.innerText = this.stats.highScorePrecision;
             }
 
-            // --- Привязка Событий ---
+            // --- Привязка Событий (Обновлено) ---
             bindEvents() {
                 // Главное меню
-                this.buttons.startClassic.addEventListener('click', () => this.startGame(this.MODES.CLASSIC));
-                this.buttons.startLevels.addEventListener('click', () => this.startGame(this.MODES.LEVELS));
-                this.buttons.startTimewarp.addEventListener('click', () => this.startGame(this.MODES.TIMEWARP));
+                this.buttons.startClassic.addEventListener('click', () => { this.startGame(this.MODES.CLASSIC); this.playSound('ui'); });
+                this.buttons.startBlitz.addEventListener('click', () => { this.startGame(this.MODES.BLITZ); this.playSound('ui'); });
+                this.buttons.startPrecision.addEventListener('click', () => { this.startGame(this.MODES.PRECISION); this.playSound('ui'); });
 
                 // Модальные окна
-                this.buttons.rules.addEventListener('click', () => this.ui.rulesModal.classList.remove('hidden'));
-                this.buttons.closeRules.addEventListener('click', () => this.ui.rulesModal.classList.add('hidden'));
+                this.buttons.rules.addEventListener('click', () => { this.ui.rulesModal.classList.remove('hidden'); this.playSound('ui'); });
+                this.buttons.closeRules.addEventListener('click', () => { this.ui.rulesModal.classList.add('hidden'); this.playSound('ui'); });
                 
                 this.buttons.stats.addEventListener('click', () => {
                     this.updateStatsUI();
                     this.ui.statsModal.classList.remove('hidden');
+                    this.playSound('ui');
                 });
-                this.buttons.closeStats.addEventListener('click', () => this.ui.statsModal.classList.add('hidden'));
+                this.buttons.closeStats.addEventListener('click', () => { this.ui.statsModal.classList.add('hidden'); this.playSound('ui'); });
                 
-                this.buttons.settings.addEventListener('click', () => this.ui.settingsModal.classList.remove('hidden'));
+                this.buttons.settings.addEventListener('click', () => { this.ui.settingsModal.classList.remove('hidden'); this.playSound('ui'); });
                 this.buttons.closeSettings.addEventListener('click', () => {
-                    this.saveSettings();
+                    // Сохранение происходит при переключении, здесь просто закрываем
                     this.ui.settingsModal.classList.add('hidden');
+                    this.playSound('ui');
                 });
+                
+                // Слушатели для переключателей настроек
+                this.ui.musicToggle.addEventListener('change', () => {
+                    this.settings.music = this.ui.musicToggle.checked;
+                    this.toggleMusic();
+                    this.saveSettings();
+                });
+                this.ui.sfxToggle.addEventListener('change', () => {
+                    this.settings.sfx = this.ui.sfxToggle.checked;
+                    this.saveSettings();
+                });
+                 this.ui.tapticToggle.addEventListener('change', () => {
+                    this.settings.taptic = this.ui.tapticToggle.checked;
+                    this.saveSettings();
+                });
+
 
                 // Пауза
-                this.buttons.pause.addEventListener('click', () => this.togglePause());
-                this.buttons.resume.addEventListener('click', () => this.togglePause());
-                this.buttons.restart.addEventListener('click', () => this.restartGame());
-                this.buttons.menu.addEventListener('click', () => this.goToMenu());
+                this.buttons.pause.addEventListener('click', () => { this.togglePause(); this.playSound('ui'); });
+                this.buttons.resume.addEventListener('click', () => { this.togglePause(); this.playSound('ui'); });
+                this.buttons.restart.addEventListener('click', () => { this.restartGame(); this.playSound('ui'); });
+                this.buttons.menu.addEventListener('click', () => { this.goToMenu(); this.playSound('ui'); });
 
                 // Конец Игры
-                this.buttons.restartGameOver.addEventListener('click', () => this.restartGame());
-                this.buttons.menuGameOver.addEventListener('click', () => this.goToMenu());
+                this.buttons.restartGameOver.addEventListener('click', () => { this.restartGame(); this.playSound('ui'); });
+                this.buttons.menuGameOver.addEventListener('click', () => { this.goToMenu(); this.playSound('ui'); });
                 
-                // Уровень пройден
-                this.buttons.nextLevel.addEventListener('click', () => {
-                    this.currentLevel++;
-                    this.stats.currentLevel = this.currentLevel;
-                    this.saveStats();
-                    this.restartGame(); // Перезапускаем игру с новым уровнем
-                });
-                this.buttons.menuLevelComplete.addEventListener('click', () => this.goToMenu());
+                // Уровень пройден (Логика удалена, но оставим на всякий случай)
+                this.buttons.nextLevel.addEventListener('click', () => this.playSound('ui'));
+                this.buttons.menuLevelComplete.addEventListener('click', () => { this.goToMenu(); this.playSound('ui'); });
 
                 // Игровые действия
                 window.addEventListener('keydown', (e) => { if (e.keyCode === 32) this.onAction(); });
@@ -1109,15 +1204,15 @@
                         this.ui.gameCanvas.style.display = 'block';
                         document.getElementById('container').classList.add('playing');
                         // Показываем нужные статы для режима
-                        if(this.gameMode === this.MODES.LEVELS) this.ui.inGameStatsLevels.classList.remove('hidden');
-                        if(this.gameMode === this.MODES.TIMEWARP) this.ui.inGameStatsTimewarp.classList.remove('hidden');
+                        if(this.gameMode === this.MODES.BLITZ) this.ui.inGameStatsBlitz.classList.remove('hidden');
+                        if(this.gameMode === this.MODES.PRECISION) this.ui.inGameStatsPrecision.classList.remove('hidden');
                         break;
                     case this.STATES.PAUSED:
                         this.ui.inGameUI.classList.remove('hidden');
                         this.ui.pauseMenu.classList.remove('hidden');
                         this.ui.gameCanvas.style.display = 'block';
-                        if(this.gameMode === this.MODES.LEVELS) this.ui.inGameStatsLevels.classList.remove('hidden');
-                        if(this.gameMode === this.MODES.TIMEWARP) this.ui.inGameStatsTimewarp.classList.remove('hidden');
+                        if(this.gameMode === this.MODES.BLITZ) this.ui.inGameStatsBlitz.classList.remove('hidden');
+                        if(this.gameMode === this.MODES.PRECISION) this.ui.inGameStatsPrecision.classList.remove('hidden');
                         break;
                     case this.STATES.ENDED:
                         this.ui.inGameUI.classList.remove('hidden');
@@ -1142,60 +1237,41 @@
             
             togglePause() {
                 if (this.state === this.STATES.PLAYING) {
-                    if (this.gameTimer) clearInterval(this.gameTimer); // Ставим таймер на паузу
+                    // if (this.gameTimer) clearInterval(this.gameTimer); // Таймер удален
                     this.setState(this.STATES.PAUSED);
                 } else if (this.state === this.STATES.PAUSED) {
-                    // Возобновляем таймер
-                    if (this.gameMode === this.MODES.TIMEWARP && this.timeLeft > 0) {
-                         this.gameTimer = setInterval(() => this.updateTimer(), 1000);
-                    }
+                    // (Логика возобновления таймера удалена)
                     this.setState(this.STATES.PLAYING);
                 }
             }
 
-            // --- Логика Игровых Режимов ---
+            // --- Логика Игровых Режимов (Обновлено) ---
             
-            getLevelTarget(level) {
-                // Простая формула: 10, 13, 16, 19...
-                return 10 + (level - 1) * 3;
-            }
-            
-            updateTimer() {
-                this.timeLeft--;
-                const minutes = String(Math.floor(this.timeLeft / 60)).padStart(2, '0');
-                const seconds = String(this.timeLeft % 60).padStart(2, '0');
-                this.ui.timerIndicator.innerText = `${minutes}:${seconds}`;
-                
-                if (this.timeLeft <= 0) {
-                    clearInterval(this.gameTimer);
-                    this.gameTimer = null;
-                    this.endGame(); // Время вышло
-                }
-            }
+            // (getLevelTarget и updateTimer удалены)
             
             startGame(mode) {
                 if (this.state !== this.STATES.PLAYING) {
+                    // --- Инициализация Аудио по клику ---
+                    this.initAudio();
+                    
                     this.gameMode = mode;
                     
                     // Сброс UI для режимов
-                    this.ui.inGameStatsLevels.classList.add('hidden');
-                    this.ui.inGameStatsTimewarp.classList.add('hidden');
+                    this.ui.inGameStatsBlitz.classList.add('hidden');
+                    this.ui.inGameStatsPrecision.classList.add('hidden');
                     
-                    if (this.gameTimer) clearInterval(this.gameTimer);
+                    // (Таймер удален)
 
-                    // Настройка для режима "Уровни"
-                    if (this.gameMode === this.MODES.LEVELS) {
-                        this.currentLevel = this.stats.currentLevel || 1;
-                        this.levelTarget = this.getLevelTarget(this.currentLevel);
-                        this.ui.levelIndicator.innerText = `Уровень: ${this.currentLevel}`;
-                        this.ui.targetIndicator.innerText = `Цель: ${this.levelTarget}`;
+                    // Настройка для режима "Блиц"
+                    if (this.gameMode === this.MODES.BLITZ) {
+                        this.currentSpeedMultiplier = 1.0;
+                        this.ui.speedIndicator.innerText = `x${this.currentSpeedMultiplier.toFixed(1)}`;
                     }
                     
-                    // Настройка для режима "На время"
-                    if (this.gameMode === this.MODES.TIMEWARP) {
-                        this.timeLeft = 60;
-                        this.ui.timerIndicator.innerText = "01:00";
-                        this.gameTimer = setInterval(() => this.updateTimer(), 1000);
+                    // Настройка для режима "Точность"
+                    if (this.gameMode === this.MODES.PRECISION) {
+                        this.currentPrecisionStrike = 0;
+                        this.ui.strikeIndicator.innerText = `🔥 ${this.currentPrecisionStrike}`;
                     }
 
                     this.reset();
@@ -1205,7 +1281,7 @@
             }
             
             goToMenu() {
-                if (this.gameTimer) clearInterval(this.gameTimer);
+                // (Таймер удален)
                 this.setState(this.STATES.RESETTING);
                 setTimeout(() => {
                     this.reset();
@@ -1274,11 +1350,13 @@
                         this.playSound('perfect');
                         this.triggerVibration('short');
                         
-                        // Режим "На Время": добавляем +2 сек
-                        if (this.gameMode === this.MODES.TIMEWARP) {
-                            this.timeLeft += 2;
-                            this.updateTimer(); // Обновляем UI таймера
+                        // Режим "Точность": обновляем счетчик
+                        if (this.gameMode === this.MODES.PRECISION) {
+                            this.currentPrecisionStrike++;
+                            this.ui.strikeIndicator.innerText = `🔥 ${this.currentPrecisionStrike}`;
                         }
+                        
+                        // (Логика TimeWarp удалена)
                         
                         if (this.perfectCombo >= 6) {
                             const comboBonus = (this.perfectCombo - 5) * 0.25;
@@ -1301,14 +1379,19 @@
                         // Обычное попадание
                         this.perfectCombo = 0;
                         this.playSound('click');
+                        
+                        // --- НОВАЯ ЛОГИКА "ТОЧНОСТИ" ---
+                        if (this.gameMode === this.MODES.PRECISION) {
+                            this.playSound('fail');
+                            this.triggerVibration('long');
+                            this.addBlock(); // Добавляем промахнувшийся блок для наглядности
+                            this.endGame();  // Немедленно завершаем игру
+                            return; // Выходим, не добавляя следующий блок
+                        }
+                        // --- КОНЕЦ ЛОГИКИ ---
                     }
                     
-                    // Проверяем, не пройден ли уровень
-                    const score = this.blocks.length - 1;
-                    if (this.gameMode === this.MODES.LEVELS && score >= this.levelTarget) {
-                        this.levelComplete();
-                        return; // Не добавляем новый блок, т.к. уровень пройден
-                    }
+                    // (Логика LevelComplete удалена)
 
                 } else {
                     // Промах
@@ -1358,6 +1441,28 @@
                 }
 
                 const newKidOnTheBlock = new Block(lastBlock, newDimensions);
+
+                // --- НОВАЯ ЛОГИКА "БЛИЦ" ---
+                // Увеличиваем скорость для режима Блиц
+                if (this.gameMode === this.MODES.BLITZ) {
+                    // Формула ускорения
+                    newKidOnTheBlock.speed = -0.15 - (newKidOnTheBlock.index * 0.015);
+                    if (newKidOnTheBlock.speed < -0.5) newKidOnTheBlock.speed = -0.5; // Макс. скорость
+                    
+                    // Обновляем направление с новой скоростью
+                    if (newKidOnTheBlock.direction > 0) {
+                         newKidOnTheBlock.direction = Math.abs(newKidOnTheBlock.speed);
+                    } else {
+                         newKidOnTheBlock.direction = newKidOnTheBlock.speed;
+                    }
+                    
+                    // Обновляем UI
+                    this.currentSpeedMultiplier = (Math.abs(newKidOnTheBlock.speed) / 0.15); // Примерный множитель
+                    this.ui.speedIndicator.innerText = `x${this.currentSpeedMultiplier.toFixed(1)}`;
+                }
+                // --- КОНЕЦ ЛОГИКИ ---
+
+
                 this.blocks.push(newKidOnTheBlock);
                 
                 if (newKidOnTheBlock.state === newKidOnTheBlock.STATES.ACTIVE) {
@@ -1427,11 +1532,14 @@
             }
 
             async endGame() {
-                // Если таймер еще идет, останавливаем
-                if (this.gameTimer) clearInterval(this.gameTimer);
+                // (Таймер удален)
                 
-                // -2, т.к. -1 за базовый блок и -1 за промахнувшийся
-                const score = Math.max(0, this.blocks.length - 2); 
+                // -2 для промаха, -1 для "Точности" (т.к. игра кончается до промаха)
+                let score = Math.max(0, this.blocks.length - 2);
+                if (this.gameMode === this.MODES.PRECISION) {
+                    score = this.currentPrecisionStrike; // В "Точности" счет = кол-во идеальных
+                }
+                 
                 let newRecord = false;
                 
                 // Обновляем заголовки и рекорды в зависимости от режима
@@ -1444,19 +1552,23 @@
                     }
                     this.ui.gameOverHighScore.innerText = this.stats.highScoreClassic;
                     
-                } else if (this.gameMode === this.MODES.TIMEWARP) {
-                    this.ui.gameOverTitle.innerText = "Время вышло!";
-                    this.ui.gameOverRecordLabel.innerText = "Рекорд (На время)";
-                    if (score > this.stats.highScoreTimewarp) {
-                        this.stats.highScoreTimewarp = score;
+                } else if (this.gameMode === this.MODES.BLITZ) {
+                    this.ui.gameOverTitle.innerText = "Игра окончена";
+                    this.ui.gameOverRecordLabel.innerText = "Рекорд (Блиц)";
+                    if (score > this.stats.highScoreBlitz) {
+                        this.stats.highScoreBlitz = score;
                         newRecord = true;
                     }
-                     this.ui.gameOverHighScore.innerText = this.stats.highScoreTimewarp;
+                     this.ui.gameOverHighScore.innerText = this.stats.highScoreBlitz;
                      
-                } else if (this.gameMode === this.MODES.LEVELS) {
-                     this.ui.gameOverTitle.innerText = "Уровень провален";
-                     this.ui.gameOverRecordLabel.innerText = "Цель уровня";
-                     this.ui.gameOverHighScore.innerText = this.levelTarget;
+                } else if (this.gameMode === this.MODES.PRECISION) {
+                     this.ui.gameOverTitle.innerText = "Ошибка!";
+                     this.ui.gameOverRecordLabel.innerText = "Рекорд (Точность)";
+                     if (score > this.stats.highScorePrecision) {
+                        this.stats.highScorePrecision = score;
+                        newRecord = true;
+                     }
+                     this.ui.gameOverHighScore.innerText = this.stats.highScorePrecision;
                 }
                 
                 // Сохраняем новые рекорды
