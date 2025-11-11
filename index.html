@@ -1116,7 +1116,9 @@
                 soundManager.play('click');
                 if (target.dataset.mode) {
                     elements.mainMenu.classList.remove('visible');
-                    elements.gameWrapper.classList.add('hidden');
+                    // *** ВОТ ОН, ФИКС: ***
+                    // Было .add('hidden'), что было неверно.
+                    elements.gameWrapper.classList.remove('hidden'); 
                     tetris.init(target.dataset.mode); resizeGame();
                 } else {
                     const modalId = target.id.replace('-btn', '-modal');
