@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Тетрис</title>
+    <title>Тетрис 2025</title>
     <!-- VK Bridge --><script src="https://unpkg.com/@vkontakte/vk-bridge/dist/browser.min.js"></script>
     <!-- Tone.js for Sound --><script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -11,7 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         /* ========================================
-        Новый Дизайн "Тетрис" v5.7 - Фикс Анимаций и Автозапуска
+        Новый Дизайн "Тетрис" v5.9 - Финальный Фикс
         ======================================== */
         :root {
             --bg-gradient-start: #1e1349;
@@ -74,8 +74,9 @@
             align-items: center;
             width: 100%;
             height: 100%;
-            padding: 15px;
-            padding-bottom: calc(70px + env(safe-area-inset-bottom));
+            /* Уменьшаем отступы для большего поля */
+            padding: 10px;
+            /* padding-bottom: calc(70px + env(safe-area-inset-bottom)); */ /* Управляется padding: 10px */
         }
 
         #game-container {
@@ -84,7 +85,8 @@
             justify-content: center;
             gap: 20px;
             width: 100%;
-            max-width: 520px;
+            /* max-width: 520px; */ /* УДАЛЕНО: делаем полностью гибким */
+            height: 100%;
         }
         
         #main-content {
@@ -92,11 +94,23 @@
             flex-direction: column;
             align-items: center;
             gap: 20px;
+            /* Новые стили для гибкости */
+            flex-grow: 1;    /* Занимает все доступное место */
+            flex-shrink: 1;  /* Позволяем сжиматься */
+            min-width: 0;    /* Важно для flex-shrink */
+            height: 100%;
         }
 
         #canvas {
-            width: 240px; /* 12 * 20px */
-            height: 440px; /* 22 * 20px */
+            /* УДАЛЕНЫ: фиксированные width и height */
+            /* width: 240px; */ 
+            /* height: 440px; */
+            
+            /* ДОБАВЛЕНО: Управление размером через CSS переменные, которые задаст JS */
+            width: var(--grid-width, 240px);
+            height: var(--grid-height, 440px);
+            margin: auto; /* Центрируем поле в доступном пространстве */
+
             background-color: rgba(0,0,0,0.3);
             position: relative;
             border-radius: 12px;
@@ -104,9 +118,13 @@
             background-image: 
                 linear-gradient(to right, var(--grid-color) 1px, transparent 1px),
                 linear-gradient(to bottom, var(--grid-color) 1px, transparent 1px);
-            background-size: 20px 20px;
+            
+            /* ДОБАВЛЕНО: размер сетки теперь тоже гибкий */
+            background-size: var(--grid-size, 20px) var(--grid-size, 20px);
             overflow: hidden;
             box-shadow: inset 0 0 20px rgba(0,0,0,0.6);
+            /* Плавное изменение размера при ресайзе */
+            transition: width 0.15s ease-out, height 0.15s ease-out;
         }
 
         /* ========================================
@@ -118,6 +136,7 @@
             gap: 15px;
             width: 120px;
             text-align: center;
+            flex-shrink: 0; /* Панель не должна сжиматься */
         }
 
         .info-box {
@@ -158,27 +177,18 @@
         ======================================== */
         .square {
             position: absolute;
-            width: 20px;
-            height: 20px;
+            /* УДАЛЕНЫ: фиксированные width и height */
+            /* width: 20px; */
+            /* height: 20px; */
+            
+            /* ДОБАВЛЕНО: Управление размером через CSS переменные */
+            width: var(--grid-size, 20px);
+            height: var(--grid-size, 20px);
+            
             box-sizing: border-box;
             border-radius: 4px;
-            /* ИЗМЕНЕНИЕ: Убраны opacity и transform, чтобы они не конфликтовали с animation */
-            
-            /* FIX: Эта строка 'transition' не используется вашим JS (т.к. вы пересоздаете
-              квадраты, а не двигаете их) и конфликтует с 'animation' в .fade-out-line.
-              Удаление этой строки чинит анимацию исчезновения линии.
-            */
+            /* ФИКС АНИМАЦИИ: Эта строка конфликтовала с @keyframes fadeOutLine. */
             /* transition: top 0.08s linear, left 0.08s linear; */
-
-            /* НОВЫЙ ФИКС: Предыдущее решение не сработало. 
-              Вместо `animation` будем использовать `transition`.
-              Это более надежный способ. Мы добавляем transition для
-              opacity и transform, которые будут анимироваться.
-            */
-            transition: opacity 0.4s ease-out, transform 0.4s ease-out;
-            transform-origin: center center; /* Добавим это для надежности */
-
-
             box-shadow: inset 0 0 5px rgba(0,0,0,0.4);
             border: 1px solid rgba(0,0,0,0.3);
         }
@@ -186,13 +196,7 @@
         
         /* Новые анимации */
         .square.fade-out-line { 
-            /* НОВЫЙ ФИКС: Убираем `animation` и просто задаем 
-              конечное состояние. `transition` из .square 
-              обработает плавный переход.
-            */
-            /* animation: fadeOutLine 0.4s ease-out forwards; */
-            opacity: 0;
-            transform: scale(0) translateX(var(--translate-x));
+            animation: fadeOutLine 0.4s ease-out forwards;
             transform-origin: center center;
         }
         .square.bomb-blast { 
@@ -201,13 +205,11 @@
         }
         .square.blinking { animation: blink 0.8s infinite; }
 
-        /*
         @keyframes fadeOutLine {
             0% { opacity: 1; transform: scale(1) translateX(0px); }
             50% { opacity: 0.8; transform: scale(0.8) translateX(var(--translate-x)); }
             100% { opacity: 0; transform: scale(0) translateX(var(--translate-x)); }
         }
-        */
 
         @keyframes bombBlast {
             0% { opacity: 1; transform: scale(1); }
@@ -309,7 +311,8 @@
             grid-template-areas: ". up ." "left down right";
             gap: 15px; 
             width: 270px; 
-            margin: 0 auto; 
+            margin: 0 auto;
+            flex-shrink: 0; /* Контролы не должны сжиматься */
         }
         .control-btn {
             width: 80px; height: 80px; 
@@ -356,6 +359,7 @@
         <div class="modal-content">
              <h1>
                 <span style="color: #e74c3c;">Т</span><span style="color: #f39c12;">е</span><span style="color: #2ecc71;">т</span><span style="color: #3498db;">р</span><span style="color: #9b59b6;">и</span><span style="color: #1abc9c;">с</span>
+                <span style="font-size: 0.5em; display: block; margin-top: 5px; color: var(--text-secondary);">2025</span>
             </h1>
             <div class="main-menu-buttons">
                 <button class="btn" data-mode="classic">Классика</button>
@@ -379,7 +383,7 @@
             <h1>Настройки</h1>
             <div class="modal-body">
                 <div class="settings-item">
-                    <span>Звуки</span>
+                    <span>Звуки (SFX)</span>
                     <label class="toggle-switch">
                         <input type="checkbox" id="sfx-toggle">
                         <span class="slider"></span>
@@ -481,10 +485,11 @@
             init: function() {
                 this.synths.reverb = new Tone.Reverb(0.6).toDestination();
                 this.synths.reverb.wet.value = 0.4; 
+                /* ФИКС СИНТАКСИСА: Добавлено двоеточие */
                 this.synths.drop = new Tone.MembraneSynth({ pitchDecay: 0.01, octaves: 6, oscillator: { type: "sine", volume: -10 }, envelope: { attack: 0.001, decay: 0.2, sustain: 0.01, release: 0.1 } }).toDestination();
                 this.synths.clear = new Tone.PolySynth(Tone.Synth, { 
-                    /* ИЗМЕНЕНИЕ ЗВУКА: делаем "поприятнее" */
-                    oscillator: { type: "fatsine", volume: -14 }, 
+                    /* ИЗМЕНЕНИЕ ЗВУКА: громче и приятнее */
+                    oscillator: { type: "fatsine", volume: -10 }, 
                     envelope: { attack: 0.01, decay: 0.3, sustain: 0.1, release: 0.6 } 
                 }).connect(this.synths.reverb);
                 this.synths.gameOver = new Tone.PolySynth(Tone.Synth, { 
@@ -710,17 +715,34 @@
 
                 for (const [id, move] of Object.entries(controls)) {
                     const btn=document.getElementById(id); 
-                    const intervalRef = { id: null };
-                    intervalRefs.push(intervalRef);
-                    const start=e=>{
-                        e.preventDefault(); soundManager.startContext(); 
-                        if(intervalRef.id||this.isPaused||this.isGameOver)return; 
-                        this.move(move); 
-                        intervalRef.id=setInterval(()=>this.move(move),120)
-                    };
-                    const end=()=>{clearInterval(intervalRef.id); intervalRef.id=null};
-                    btn.addEventListener('mousedown',start); btn.addEventListener('touchstart',start,{passive:false});
-                    this.eventHandlers.mobile.push({btn,start,end});
+                    
+                    // *** ФИКС КНОПКИ ПОВОРОТА ***
+                    if (move === 'RT') {
+                        // Поворот - это одиночное нажатие, без интервала
+                        const start=e=>{
+                            e.preventDefault(); 
+                            soundManager.startContext(); 
+                            if(this.isPaused||this.isGameOver)return; 
+                            this.move('RT'); 
+                        };
+                        btn.addEventListener('mousedown',start); 
+                        btn.addEventListener('touchstart',start,{passive:false});
+                        this.eventHandlers.mobile.push({btn,start,end:()=>{}}); // Пустой 'end'
+                    } else {
+                        // Логика с зажатием (setInterval) для L, R, D
+                        const intervalRef = { id: null };
+                        intervalRefs.push(intervalRef);
+                        const start=e=>{
+                            e.preventDefault(); soundManager.startContext(); 
+                            if(intervalRef.id||this.isPaused||this.isGameOver)return; 
+                            this.move(move); 
+                            intervalRef.id=setInterval(()=>this.move(move),120)
+                        };
+                        const end=()=>{clearInterval(intervalRef.id); intervalRef.id=null};
+                        btn.addEventListener('mousedown',start); btn.addEventListener('touchstart',start,{passive:false});
+                        this.eventHandlers.mobile.push({btn,start,end});
+                    }
+                    // *** КОНЕЦ ФИКСА ***
                 }
                 
                 const clearAllIntervals = () => intervalRefs.forEach(ref => { clearInterval(ref.id); ref.id = null; });
@@ -869,31 +891,23 @@
                         // Добавляем класс анимации и случайное смещение
                         // Важно: random() < 0.5 будет смещать влево/вправо примерно одинаково
                         sq.style.setProperty('--translate-x', `${(Math.random() < 0.5 ? -1 : 1) * (Math.random() * 80 + 20)}px`); // От 20 до 100px
-                        
-                        /*
-                        // УБИРАЕМ ДОБАВЛЕНИЕ КЛАССА ОТСЮДА
-                        sq.classList.add('fade-out-line');
-                        // И УБИРАЕМ УСТАНОВКУ ЗАДЕРЖКИ
-                        sq.style.animationDelay = `${Math.random() * 0.15}s`; 
-                        */
                     }
                 });
                 
                 soundManager.play('clear');
-
-                // FIX 1: Даем браузеру 10мс (один кадр) на отрисовку блоков
+                
+                // ФИКС АНИМАЦИИ:
+                // 1. Даем браузеру 10мс (один кадр) на отрисовку блоков
                 // перед тем, как запустить анимацию исчезновения.
                 setTimeout(() => {
                     squaresToRemove.forEach(sq => {
-                        // FIX 2: Используем 'transitionDelay', а не 'animationDelay', 
-                        // так как мы используем CSS transition.
-                        sq.style.transitionDelay = `${Math.random() * 0.15}s`;
+                        sq.style.animationDelay = `${Math.random() * 0.15}s`;
                         sq.classList.add('fade-out-line');
                     });
                 }, 10); // 10мс задержка для reflow
                 
-                // FIX 3: Увеличиваем общую задержку, чтобы учесть 
-                // длительность transition (400ms) + макс. задержку (150ms) + reflow (10ms)
+                // 2. Увеличиваем общую задержку, чтобы учесть 
+                // длительность animation (400ms) + макс. задержку (150ms) + reflow (10ms)
                 setTimeout(() => {
                     squaresToRemove.forEach(sq => sq.remove()); // Удаляем блоки после анимации
                     this.removeRows(rows); // ВЫЗЫВАЕМ removeRows (который БОЛЬШЕ не перерисовывает)
@@ -903,7 +917,7 @@
                     this.calcScore({ lines: rows.length }); 
                     this.checkLevelUp();
                     if (!this.isGameOver) { this.initShapes(); this.startGameLoop(); }
-                }, 560); // 400ms (transition) + 150ms (max delay) + 10ms (reflow) = 560ms
+                }, 560); // 400ms (animation) + 150ms (max delay) + 10ms (reflow) = 560ms
             },
             removeRows: function(rows) {
                 const linesCleared = rows.length;
@@ -911,7 +925,9 @@
                 for (let i = 0; i < linesCleared; i++) {
                     this.board.unshift(Array(this.boardWidth).fill(null));
                 }
-                // this.redrawAllBlocks(); // <-- ГЛАВНЫЙ ФИКС: УДАЛЯЕМ ЭТУ СТРОКУ
+                // ФИКС АНИМАЦИИ: УДАЛЯЕМ ЭТУ СТРОКУ,
+                // она перенесена в animateAndRemoveRows
+                // this.redrawAllBlocks(); 
             },
             redrawAllBlocks: function() {
                 this.removeSqs(this.sqs); this.sqs = [];
@@ -1036,16 +1052,55 @@
             }
         };
         
+        /* * ФИКС АДАПТИВНОСТИ: Полностью новая функция resizeGame
+         */
         function resizeGame() {
-            const gameWrapper = document.getElementById('game-wrapper');
-            const gameContainer = document.getElementById('game-container');
-            if (!gameContainer || !gameWrapper) return;
-            const availableWidth = gameWrapper.clientWidth;
-            const availableHeight = gameWrapper.clientHeight;
-            const baseWidth = 420;
-            const baseHeight = 680;
-            const scale = Math.min(availableWidth / baseWidth, availableHeight / baseHeight, 1.1);
-            gameContainer.style.transform = `scale(${scale})`;
+            // 1. Получаем доступное пространство (все окно минус отступы)
+            const availableWidth = window.innerWidth - 20; // 10px padding left/right
+            const availableHeight = window.innerHeight - 20; // 10px padding top/bottom
+
+            // 2. Определяем размеры фиксированных элементов
+            const sidePanelWidth = 120 + 20; // Ширина панели + отступ
+            const mobileControlsHeight = 270 + 20; // Высота кнопок + отступ
+
+            // 3. Вычисляем доступное место для блока #main-content
+            // (он содержит canvas + мобильные кнопки)
+            const mainContentWidth = availableWidth - sidePanelWidth;
+            const mainContentHeight = availableHeight;
+
+            // 4. Вычисляем доступное место непосредственно для #canvas
+            // (внутри #main-content)
+            const canvasAvailableWidth = mainContentWidth;
+            const canvasAvailableHeight = mainContentHeight - mobileControlsHeight;
+
+            // 5. Рассчитываем размер 'pSize' (pixel size) на основе ограничений
+            let pSizeX = Math.floor(canvasAvailableWidth / tetris.boardWidth);
+            let pSizeY = Math.floor(canvasAvailableHeight / tetris.boardHeight);
+            
+            // Выбираем наименьший из двух, чтобы сохранить пропорции
+            let newPSize = Math.min(pSizeX, pSizeY);
+            
+            // 6. Устанавливаем минимальный размер
+            if (newPSize < 5) newPSize = 5; 
+
+            // 7. Применяем новый pSize в JS
+            tetris.pSize = newPSize; 
+            
+            // 8. Устанавливаем CSS-переменные, которые обновят CSS
+            const canvasEl = elements.canvas;
+            canvasEl.style.setProperty('--grid-width', `${newPSize * tetris.boardWidth}px`);
+            canvasEl.style.setProperty('--grid-height', `${newPSize * tetris.boardHeight}px`);
+            canvasEl.style.setProperty('--grid-size', `${newPSize}px`);
+            
+            // 9. Перерисовываем элементы, зависящие от pSize
+            // (только если игра уже запущена)
+            if (tetris.isActive && !tetris.isPaused) {
+                tetris.redrawAllBlocks(); // Перерисовать статичные блоки
+                tetris.drawShape(); // Перерисовать текущую фигуру
+            }
+            if (tetris.nextShapeIndex != null) {
+                 tetris.drawNextShape(); // Перерисовать следующую фигуру
+            }
         }
 
         async function initApp() {
@@ -1100,6 +1155,8 @@
             });
             
             elements.pauseBtn.addEventListener('click', () => tetris.togglePause());
+            
+            // Вызываем resizeGame при загрузке и при изменении размера окна
             window.addEventListener('resize', resizeGame);
             resizeGame();
         }
