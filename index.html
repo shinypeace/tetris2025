@@ -11,7 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         /* ========================================
-        Новый Дизайн "Тетрис" v5.9 - Финальный Фикс
+        Новый Дизайн "Тетрис" v6.0 - Handheld Edition
         ======================================== */
         :root {
             --bg-gradient-start: #1e1349;
@@ -74,42 +74,33 @@
             align-items: center;
             width: 100%;
             height: 100%;
-            /* Уменьшаем отступы для большего поля */
             padding: 10px;
-            /* padding-bottom: calc(70px + env(safe-area-inset-bottom)); */ /* Управляется padding: 10px */
         }
 
-        #game-container {
-            display: flex;
-            align-items: flex-start; 
-            justify-content: center;
-            gap: 20px;
-            width: 100%;
-            /* max-width: 520px; */ /* УДАЛЕНО: делаем полностью гибким */
-            height: 100%;
-        }
-        
-        #main-content {
+        /* НОВЫЙ "Game Boy" контейнер */
+        #game-console {
             display: flex;
             flex-direction: column;
-            align-items: center;
             gap: 20px;
-            /* Новые стили для гибкости */
-            flex-grow: 1;    /* Занимает все доступное место */
-            flex-shrink: 1;  /* Позволяем сжиматься */
-            min-width: 0;    /* Важно для flex-shrink */
-            height: 100%;
+            background: rgba(0, 0, 0, 0.25); /* Темный фон для "устройства" */
+            padding: 20px;
+            border-radius: 20px;
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 8px 32px 0 var(--shadow-color);
+            margin: auto; /* Центрируем "устройство" в game-wrapper */
+        }
+
+        #screen-area {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
         }
 
         #canvas {
-            /* УДАЛЕНЫ: фиксированные width и height */
-            /* width: 240px; */ 
-            /* height: 440px; */
-            
             /* ДОБАВЛЕНО: Управление размером через CSS переменные, которые задаст JS */
             width: var(--grid-width, 240px);
             height: var(--grid-height, 440px);
-            margin: auto; /* Центрируем поле в доступном пространстве */
+            margin: 0; /* Убрано 'auto' */
 
             background-color: rgba(0,0,0,0.3);
             position: relative;
@@ -177,10 +168,6 @@
         ======================================== */
         .square {
             position: absolute;
-            /* УДАЛЕНЫ: фиксированные width и height */
-            /* width: 20px; */
-            /* height: 20px; */
-            
             /* ДОБАВЛЕНО: Управление размером через CSS переменные */
             width: var(--grid-size, 20px);
             height: var(--grid-size, 20px);
@@ -421,29 +408,30 @@
     <div id="stats-modal" class="modal-overlay"><div class="modal-content"><h1>Статистика</h1><div id="stats-grid" class="modal-body"></div><button id="close-stats-btn" class="btn">Закрыть</button></div></div>
 
     <div id="game-wrapper" class="hidden">
-        <div id="game-container">
-            <div id="main-content">
+        <!-- "Game Boy" Style Container -->
+        <div id="game-console">
+            <div id="screen-area">
                 <div id="canvas"></div>
-                <div id="mobile-controls">
-                    <button id="left-btn" class="control-btn" aria-label="Влево">
-                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12l4.58-4.59z"></path></svg>
-                    </button>
-                    <button id="down-btn" class="control-btn" aria-label="Вниз">
-                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"></path></svg>
-                    </button>
-                    <button id="right-btn" class="control-btn" aria-label="Вправо">
-                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12l-4.58 4.59z"></path></svg>
-                    </button>
-                    <button id="rotate-btn" class="control-btn" aria-label="Поворот">
-                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"></path></svg>
-                    </button>
+                <div id="side-info-panel">
+                    <div class="info-box"><p>Далее</p><div id="next_shape"></div></div>
+                    <div class="info-box"><p>Счет</p><span id="score-val">0</span></div>
+                    <div class="info-box"><p>Линии</p><span id="lines-val">0</span></div>
+                    <button id="pause-btn" class="btn" style="width: 100%; font-size: 12px; padding: 12px;">Пауза</button>
                 </div>
             </div>
-            <div id="side-info-panel">
-                <div class="info-box"><p>Далее</p><div id="next_shape"></div></div>
-                <div class="info-box"><p>Счет</p><span id="score-val">0</span></div>
-                <div class="info-box"><p>Линии</p><span id="lines-val">0</span></div>
-                <button id="pause-btn" class="btn" style="width: 100%; font-size: 12px; padding: 12px;">Пауза</button>
+            <div id="mobile-controls">
+                <button id="left-btn" class="control-btn" aria-label="Влево">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12l4.58-4.59z"></path></svg>
+                </button>
+                <button id="down-btn" class="control-btn" aria-label="Вниз">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"></path></svg>
+                </button>
+                <button id="right-btn" class="control-btn" aria-label="Вправо">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12l-4.58 4.59z"></path></svg>
+                </button>
+                <button id="rotate-btn" class="control-btn" aria-label="Поворот">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"></path></svg>
+                </button>
             </div>
         </div>
     </div>
@@ -674,11 +662,23 @@
                 elements.nextShapeDisplay.innerHTML = "";
                 const shape = this.shapes[this.nextShapeIndex];
                 const bounds = shape.reduce((b, [x,y]) => ({ minX: Math.min(b.minX, x), maxX: Math.max(b.maxX, x), minY: Math.min(b.minY, y), maxY: Math.max(b.maxY, y) }), {minX:0,maxX:0,minY:0,maxY:0});
-                const w = (bounds.maxX - bounds.minX + 1) * this.pSize;
-                const h = (bounds.maxY - bounds.minY + 1) * this.pSize;
+                
+                // *** Адаптивный ресайз 'Далее' ***
+                // Используем pSize, но делаем его чуть меньше, чтобы поместилось
+                const nextPSize = Math.min( (120 - 10) / 4, (70 - 10) / 3 ); // 120px/70px - размер .info-box
+                
+                const w = (bounds.maxX - bounds.minX + 1) * nextPSize;
+                const h = (bounds.maxY - bounds.minY + 1) * nextPSize;
                 const offsetX = (elements.nextShapeDisplay.clientWidth - w) / 2; 
                 const offsetY = (elements.nextShapeDisplay.clientHeight - h) / 2;
-                shape.forEach(([x,y]) => elements.nextShapeDisplay.appendChild(this.createSquare((x-bounds.minX)*this.pSize + offsetX, (y-bounds.minY)*this.pSize + offsetY, this.nextShapeIndex)));
+                
+                shape.forEach(([x,y]) => {
+                    // Создаем квадрат, но с кастомным размером
+                    const sq = this.createSquare((x-bounds.minX)*nextPSize + offsetX, (y-bounds.minY)*nextPSize + offsetY, this.nextShapeIndex);
+                    sq.style.width = `${nextPSize}px`;
+                    sq.style.height = `${nextPSize}px`;
+                    elements.nextShapeDisplay.appendChild(sq);
+                });
             },
             drawShape: function () {
                 this.removeSqs(this.curSqs); this.curSqs = [];
@@ -1056,43 +1056,41 @@
          */
         function resizeGame() {
             // 1. Получаем доступное пространство (все окно минус отступы)
-            const availableWidth = window.innerWidth - 20; // 10px padding left/right
-            const availableHeight = window.innerHeight - 20; // 10px padding top/bottom
+            // #game-wrapper имеет padding: 10px
+            // #game-console имеет padding: 20px
+            const totalPaddingX = (10 * 2) + (20 * 2);
+            const totalPaddingY = (10 * 2) + (20 * 2);
 
-            // 2. Определяем размеры фиксированных элементов
-            const sidePanelWidth = 120 + 20; // Ширина панели + отступ
-            const mobileControlsHeight = 270 + 20; // Высота кнопок + отступ
+            // 2. Определяем размеры *внутренних* фиксированных элементов
+            const sidePanelWidth = 120;
+            const panelGap = 20;
+            const mobileControlsHeight = 270;
+            const controlsGap = 20;
 
-            // 3. Вычисляем доступное место для блока #main-content
-            // (он содержит canvas + мобильные кнопки)
-            const mainContentWidth = availableWidth - sidePanelWidth;
-            const mainContentHeight = availableHeight;
+            // 3. Вычисляем доступное место *только для холста (canvas)*
+            const canvasAvailableWidth = window.innerWidth - totalPaddingX - sidePanelWidth - panelGap;
+            const canvasAvailableHeight = window.innerHeight - totalPaddingY - mobileControlsHeight - controlsGap;
 
-            // 4. Вычисляем доступное место непосредственно для #canvas
-            // (внутри #main-content)
-            const canvasAvailableWidth = mainContentWidth;
-            const canvasAvailableHeight = mainContentHeight - mobileControlsHeight;
-
-            // 5. Рассчитываем размер 'pSize' (pixel size) на основе ограничений
+            // 4. Рассчитываем размер 'pSize' (pixel size) на основе ограничений
             let pSizeX = Math.floor(canvasAvailableWidth / tetris.boardWidth);
             let pSizeY = Math.floor(canvasAvailableHeight / tetris.boardHeight);
             
             // Выбираем наименьший из двух, чтобы сохранить пропорции
             let newPSize = Math.min(pSizeX, pSizeY);
             
-            // 6. Устанавливаем минимальный размер
+            // 5. Устанавливаем минимальный размер
             if (newPSize < 5) newPSize = 5; 
 
-            // 7. Применяем новый pSize в JS
+            // 6. Применяем новый pSize в JS
             tetris.pSize = newPSize; 
             
-            // 8. Устанавливаем CSS-переменные, которые обновят CSS
+            // 7. Устанавливаем CSS-переменные, которые обновят CSS
             const canvasEl = elements.canvas;
             canvasEl.style.setProperty('--grid-width', `${newPSize * tetris.boardWidth}px`);
             canvasEl.style.setProperty('--grid-height', `${newPSize * tetris.boardHeight}px`);
             canvasEl.style.setProperty('--grid-size', `${newPSize}px`);
             
-            // 9. Перерисовываем элементы, зависящие от pSize
+            // 8. Перерисовываем элементы, зависящие от pSize
             // (только если игра уже запущена)
             if (tetris.isActive && !tetris.isPaused) {
                 tetris.redrawAllBlocks(); // Перерисовать статичные блоки
@@ -1118,7 +1116,7 @@
                 soundManager.play('click');
                 if (target.dataset.mode) {
                     elements.mainMenu.classList.remove('visible');
-                    elements.gameWrapper.classList.remove('hidden');
+                    elements.gameWrapper.classList.add('hidden');
                     tetris.init(target.dataset.mode); resizeGame();
                 } else {
                     const modalId = target.id.replace('-btn', '-modal');
