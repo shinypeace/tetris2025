@@ -74,16 +74,16 @@
             align-items: center;
             width: 100%;
             height: 100%;
-            padding: 10px;
+            padding: 5px; /* УМЕНЬШЕНО (было 10px) */
         }
 
         /* НОВЫЙ "Game Boy" контейнер */
         #game-console {
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: 10px; /* УМЕНЬШЕНО (было 15px) */
             background: rgba(0, 0, 0, 0.25); /* Темный фон для "устройства" */
-            padding: 20px;
+            padding: 15px; /* УМЕНЬШЕНО (было 20px) */
             border-radius: 20px;
             border: 1px solid var(--glass-border);
             box-shadow: 0 8px 32px 0 var(--shadow-color);
@@ -93,7 +93,7 @@
         #screen-area {
             display: flex;
             justify-content: center;
-            gap: 20px;
+            gap: 10px; /* УМЕНЬШЕНО (было 15px) */
         }
 
         #canvas {
@@ -124,8 +124,8 @@
         #side-info-panel {
             display: flex;
             flex-direction: column;
-            gap: 15px;
-            width: 120px;
+            gap: 10px; /* УМЕНЬШЕНО (было 15px) */
+            width: 80px; /* УМЕНЬШЕНО (было 100px) */
             text-align: center;
             flex-shrink: 0; /* Панель не должна сжиматься */
         }
@@ -141,14 +141,14 @@
         }
         .info-box p {
             margin: 0;
-            font-size: 10px;
+            font-size: 9px; /* УМЕНЬШЕНО (было 10px) */
             color: var(--text-secondary);
             text-transform: uppercase;
             font-weight: 600;
         }
         .info-box span {
             display: block;
-            font-size: 18px;
+            font-size: 16px; /* УМЕНЬШЕНО (было 18px) */
             color: var(--text-primary);
             margin-top: 4px;
             font-weight: 700;
@@ -157,7 +157,7 @@
         #next_shape {
             position: relative;
             width: 100%;
-            height: 70px;
+            height: 50px; /* УМЕНЬШЕНО (было 60px) */
             display: flex;
             justify-content: center;
             align-items: center;
@@ -261,6 +261,12 @@
         .btn:hover { background: linear-gradient(45deg, var(--btn-hover-start), var(--btn-hover-end)); transform: translateY(-3px); box-shadow: 0 7px 20px rgba(139, 92, 246, 0.4); }
         .btn:active { transform: translateY(0px); box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3); }
 
+        /* Кнопка "Пауза" в боковой панели */
+        #pause-btn.btn {
+            font-size: 11px; /* УМЕНЬШЕНО (было 12px) */
+            padding: 12px 5px; /* УМЕНЬШЕНО */
+        }
+
         .main-menu-buttons { display: flex; flex-direction: column; align-items: center; gap: 15px; }
         .main-menu-footer { display: flex; gap: 15px; margin-top: 20px; }
         .circle-btn {
@@ -296,13 +302,13 @@
         #mobile-controls {
             display: grid;
             grid-template-areas: ". up ." "left down right";
-            gap: 15px; 
-            width: 270px; 
+            gap: 10px; /* (было 15px) */
+            width: 200px; /* УМЕНЬШЕНО (было 230px) */
             margin: 0 auto;
             flex-shrink: 0; /* Контролы не должны сжиматься */
         }
         .control-btn {
-            width: 80px; height: 80px; 
+            width: 60px; height: 60px; /* УМЕНЬШЕНО (было 70px) */
             font-size: 30px;
             border-radius: 50%; 
             display: flex; justify-content: center; align-items: center;
@@ -319,15 +325,15 @@
             box-shadow: 0 2px 5px rgba(0,0,0,0.2), inset 0 4px 8px rgba(0, 0, 0, 0.2); 
         }
         .control-btn svg {
-            width: 40px; 
-            height: 40px;
+            width: 30px; /* УМЕНЬШЕНО (было 35px) */
+            height: 30px; /* УМЕНЬШЕНО (было 35px) */
             fill: var(--text-primary);
             filter: drop-shadow(0 1px 1px rgba(0,0,0,0.4));
         }
 
         #rotate-btn { 
             grid-area: up; 
-            width: 70px; height: 70px; 
+            width: 50px; height: 50px; /* УМЕНЬШЕНО (было 60px) */
             margin: 0 auto; 
         }
         #left-btn { grid-area: left; }
@@ -416,7 +422,7 @@
                     <div class="info-box"><p>Далее</p><div id="next_shape"></div></div>
                     <div class="info-box"><p>Счет</p><span id="score-val">0</span></div>
                     <div class="info-box"><p>Линии</p><span id="lines-val">0</span></div>
-                    <button id="pause-btn" class="btn" style="width: 100%; font-size: 12px; padding: 12px;">Пауза</button>
+                    <button id="pause-btn" class="btn" style="width: 100%; font-size: 11px; padding: 12px 5px;">Пауза</button>
                 </div>
             </div>
             <div id="mobile-controls">
@@ -664,8 +670,8 @@
                 const bounds = shape.reduce((b, [x,y]) => ({ minX: Math.min(b.minX, x), maxX: Math.max(b.maxX, x), minY: Math.min(b.minY, y), maxY: Math.max(b.maxY, y) }), {minX:0,maxX:0,minY:0,maxY:0});
                 
                 // *** Адаптивный ресайз 'Далее' ***
-                // Используем pSize, но делаем его чуть меньше, чтобы поместилось
-                const nextPSize = Math.min( (120 - 10) / 4, (70 - 10) / 3 ); // 120px/70px - размер .info-box
+                // Обновлено под 80px/50px
+                const nextPSize = Math.min( (80 - 10) / 4, (50 - 10) / 3 ); 
                 
                 const w = (bounds.maxX - bounds.minX + 1) * nextPSize;
                 const h = (bounds.maxY - bounds.minY + 1) * nextPSize;
@@ -1056,16 +1062,17 @@
          */
         function resizeGame() {
             // 1. Получаем доступное пространство (все окно минус отступы)
-            // #game-wrapper имеет padding: 10px
-            // #game-console имеет padding: 20px
-            const totalPaddingX = (10 * 2) + (20 * 2);
-            const totalPaddingY = (10 * 2) + (20 * 2);
+            // #game-wrapper имеет padding: 5px
+            // #game-console имеет padding: 15px
+            const totalPaddingX = (5 * 2) + (15 * 2); /* УМЕНЬШЕНО */
+            const totalPaddingY = (5 * 2) + (15 * 2); /* УМЕНЬШЕНО */
 
             // 2. Определяем размеры *внутренних* фиксированных элементов
-            const sidePanelWidth = 120;
-            const panelGap = 20;
-            const mobileControlsHeight = 270;
-            const controlsGap = 20;
+            const sidePanelWidth = 80; /* УМЕНЬШЕНО (было 100) */
+            const panelGap = 10; /* УМЕНЬШЕНО (было 15) */
+            // Новая высота кнопок: 50 (вверх) + 10 (gap) + 60 (вниз) = 120
+            const mobileControlsHeight = 120; /* УМЕНЬШЕНО (было 140) */
+            const controlsGap = 10; /* УМЕНЬШЕНО (было 15) */
 
             // 3. Вычисляем доступное место *только для холста (canvas)*
             const canvasAvailableWidth = window.innerWidth - totalPaddingX - sidePanelWidth - panelGap;
