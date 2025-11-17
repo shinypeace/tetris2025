@@ -560,12 +560,27 @@
 
         let isVK = false;
         let wasMusicPlaying = false; 
-        const STATS_VK_KEY = 'tetrisGameStats_v5';
+        
+        // --- ИЗМЕНЕНИЯ СИСТЕМЫ СОХРАНЕНИЯ ---
+        let vkUserId = null; // ID пользователя VK
+        const STATS_BASE_KEY = 'tetrisGameStats_v5'; // Базовый ключ
+        // --- КОНЕЦ ИЗМЕНЕНИЙ ---
 
         async function initVK() {
             try {
                 await vkBridge.send('VKWebAppInit'); 
                 isVK = true;
+
+                // --- ДОБАВЛЕНО: Получаем ID пользователя ---
+                try {
+                    const user = await vkBridge.send('VKWebAppGetUserInfo');
+                    vkUserId = user.id;
+                } catch (error) {
+                    console.warn("Could not get VK User ID.", error);
+                    vkUserId = 'local_test_user'; // Fallback для теста
+                }
+                // --- КОНЕЦ ДОБАВЛЕНИЯ ---
+
                 soundManager.startContext(); // Запускаем контекст Tone и музыку после инициализации VK
                 vkBridge.subscribe(e => {
                     if (e.detail.type === 'VKWebAppViewHide') {
@@ -586,6 +601,9 @@
                 vkBridge.send("VKWebAppShowBannerAd", { banner_location: 'bottom' }).catch(e => {});
             } catch (error) { 
                 isVK = false; 
+                // --- ДОБАВЛЕНО: Fallback ID если VK не работает ---
+                vkUserId = 'local_test_user_no_vk';
+                // --- КОНЕЦ ДОБАВЛЕНИЯ ---
                 console.warn("VK Bridge init failed", error);
             }
         }
@@ -781,7 +799,7 @@
                 this.clearTimers(); this.isActive=false; this.isGameOver=true;
                 elements.gameOverTitle.textContent="Конец Игры";
                 elements.gameOverMenu.classList.add('visible');
-                stats.save(this.gameMode, this.score, this.lines);
+                stats.save(this.gameMode, this.score, this.lines); // <-- ВЫЗЫВАЕМ НОВУЮ ФУНКЦИЮ SAVE
                 soundManager.play('gameOver');
                 
                 if(isVK) {
@@ -1029,23 +1047,75 @@
             }
         };
 
+        // --- ИЗМЕНЕНИЯ СИСТЕМЫ СОХРАНЕНИЯ ---
         const stats = {
-            data: {},
+            data: {}, // Будет заполнено при загрузке
             async load() {
-                const loadedData = isVK ? (await vkBridge.send('VKWebAppStorageGet', { keys: [STATS_VK_KEY] }).catch(()=>null))?.keys?.[0]?.value : localStorage.getItem(STATS_VK_KEY);
+                // Эта функция теперь зависит от vkUserId, который устанавливается в initVK()
+                if (!vkUserId) {
+                    console.error("Stats.load() called before vkUserId was set!");
+                    vkUserId = 'local_fallback_error'; // Запасной вариант на случай ошибки
+                }
+
+                const storageKey = `${STATS_BASE_KEY}_${vkUserId}`; // <-- КЛЮЧ СТАЛ УНИКАЛЬНЫМ
                 const defaultStats = { classic:{highScore:0,maxLines:0}, avalanche:{highScore:0,maxLines:0}, demolition:{highScore:0,maxLines:0} };
-                this.data = loadedData ? JSON.parse(loadedData) : defaultStats;
-                Object.keys(defaultStats).forEach(mode => { if (!this.data[mode]) this.data[mode] = defaultStats[mode]; });
+
+                let loadedData = null;
+                try {
+                    // Пытаемся загрузить из VK Storage
+                    const response = isVK ? (await vkBridge.send('VKWebAppStorageGet', { keys: [storageKey] }).catch(()=>null)) : null;
+                    if (response && response.keys[0]?.value) {
+                        loadedData = JSON.parse(response.keys[0].value);
+                    } else {
+                        // Если не получилось, пробуем localStorage (наш fallback)
+                        const localData = localStorage.getItem(storageKey);
+                        if (localData) loadedData = JSON.parse(localData);
+                    }
+                } catch (error) {
+                    // Если VK Storage выдал ошибку, пробуем localStorage
+                    console.warn("VK Storage load failed, falling back to localStorage", error);
+                    const localData = localStorage.getItem(storageKey);
+                    if (localData) loadedData = JSON.parse(localData);
+                }
+
+                // Аккуратно объединяем загруженные данные с данными по умолчанию
+                if (loadedData) {
+                    Object.keys(defaultStats).forEach(mode => {
+                        if (loadedData[mode]) {
+                            defaultStats[mode].highScore = loadedData[mode].highScore || 0;
+                            defaultStats[mode].maxLines = loadedData[mode].maxLines || 0;
+                        }
+                    });
+                }
+                this.data = defaultStats;
             },
             async save(mode, score, lines) {
                 if (!this.data[mode]) return;
                 this.data[mode].highScore=Math.max(this.data[mode].highScore, score);
                 this.data[mode].maxLines=Math.max(this.data[mode].maxLines, lines);
+                
                 const dataString = JSON.stringify(this.data);
-                localStorage.setItem(STATS_VK_KEY, dataString);
-                if (isVK) vkBridge.send('VKWebAppStorageSet', { key: STATS_VK_KEY, value: dataString }).catch(e=>{});
+                if (!vkUserId) {
+                    console.error("Stats.save() called before vkUserId was set!");
+                    return; // Не можем сохранить без ID
+                }
+
+                const storageKey = `${STATS_BASE_KEY}_${vkUserId}`; // <-- КЛЮЧ СТАЛ УНИКАЛЬНЫМ
+
+                // Всегда сохраняем в localStorage (надежный бэкап)
+                localStorage.setItem(storageKey, dataString);
+
+                // И пытаемся сохранить в VK Storage
+                if (isVK) {
+                    try {
+                        await vkBridge.send('VKWebAppStorageSet', { key: storageKey, value: dataString });
+                    } catch (e) {
+                        console.warn("VK Storage save failed. Data is saved in localStorage.", e);
+                    }
+                }
             },
             display: function() {
+                // Эта функция полностью совместима, т.к. this.data уже заполнен
                 elements.statsGrid.innerHTML = `
                     <table class="stats-table">
                         <thead><tr><th>Режим</th><th>Рекорд</th><th>Линии</th></tr></thead>
@@ -1057,6 +1127,7 @@
                     </table>`;
             }
         };
+        // --- КОНЕЦ ИЗМЕНЕНИЙ СИСТЕМЫ СОХРАНЕНИЯ ---
         
         /* * ФИКС АДАПТИВНОСТИ: Полностью новая функция resizeGame
          */
@@ -1109,9 +1180,11 @@
         }
 
         async function initApp() {
-            await stats.load();
-            soundManager.init();
-            await initVK();
+            // --- ИЗМЕНЕН ПОРЯДОК ЗАГРУЗКИ ---
+            await initVK();     // 1. Сначала инициализируем VK и получаем vkUserId
+            await stats.load(); // 2. Затем загружаем статистику, используя vkUserId
+            soundManager.init(); // 3. Инициализируем звуки
+            // --- КОНЕЦ ИЗМЕНЕНИЙ ---
             
             elements.bgMusic.volume = 0.3; 
             
